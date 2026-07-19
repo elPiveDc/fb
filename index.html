@@ -8,68 +8,80 @@
     <title>Navigation HUD</title>
 
     <!-- Leaflet -->
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-    <!-- Estilos propios -->
+    <!-- CSS propio -->
+
     <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body>
-    <!-- ======================
-         CAMARA
-    ======================= -->
+    <!-- =================================================
+     CAMARA + HUD
+================================================== -->
 
     <div id="camera-container">
       <video id="camera" autoplay playsinline muted></video>
 
-      <!-- HUD SOBRE CAMARA -->
-
       <div id="overlay">
-        <!-- DATOS -->
+        <!-- ==========================
+             INFORMACION GPS
+        =========================== -->
 
         <div id="info-panel">
           <div>
             <strong>Hora:</strong>
-            <span id="time">--:--:--</span>
+
+            <span id="time"> --:--:-- </span>
           </div>
 
           <div>
             <strong>Lat:</strong>
-            <span id="latitude">---</span>
+
+            <span id="latitude"> --- </span>
           </div>
 
           <div>
             <strong>Lon:</strong>
-            <span id="longitude">---</span>
+
+            <span id="longitude"> --- </span>
           </div>
 
           <div>
             <strong>Alt:</strong>
-            <span id="altitude">---</span>
+
+            <span id="altitude"> --- </span>
           </div>
 
           <div>
             <strong>Precisión:</strong>
-            <span id="accuracy">---</span>
+
+            <span id="accuracy"> --- </span>
           </div>
 
           <div>
             <strong>Velocidad:</strong>
-            <span id="speed">---</span>
+
+            <span id="speed"> --- </span>
           </div>
 
           <div>
             <strong>Distancia:</strong>
-            <span id="distance">---</span>
+
+            <span id="distance"> --- </span>
           </div>
 
           <div>
             <strong>ETA:</strong>
-            <span id="eta">---</span>
+
+            <span id="eta"> --- </span>
           </div>
         </div>
 
-        <!-- BRUJULA -->
+        <!-- ==========================
+             BRUJULA
+        =========================== -->
 
         <div id="compass-panel">
           <div id="compass">🧭</div>
@@ -77,31 +89,45 @@
           <div id="heading">0°</div>
         </div>
 
-        <!-- INDICACIONES -->
+        <!-- ==========================
+             NAVEGACION HUD
+        =========================== -->
 
         <div id="navigation">
           <div id="arrow">↑</div>
 
-          <div id="instruction">Seleccione un destino en el mapa</div>
+          <div id="street">Buscando calle...</div>
+
+          <div id="instruction">Seleccione un destino</div>
         </div>
       </div>
     </div>
 
-    <!-- ======================
-         MAPA
-    ======================= -->
+    <!-- =================================================
+     MAPA
+================================================== -->
 
-    <div id="map"></div>
+    <div id="map-container">
+      <div id="map"></div>
 
-    <!-- ======================
-         LIBRERIAS
-    ======================= -->
+      <!-- Expandir mapa -->
+
+      <button id="map-size-btn">⛶</button>
+
+      <!-- Cambiar tema -->
+
+      <button id="map-theme-btn">🌙</button>
+    </div>
+
+    <!-- =================================================
+     LIBRERIAS
+================================================== -->
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    <!-- ======================
-         MODULOS
-    ======================= -->
+    <!-- =================================================
+     LOGICA
+================================================== -->
 
     <script src="map.js"></script>
 

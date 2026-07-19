@@ -16,7 +16,11 @@ let destination = null;
 
 let currentRoute = null;
 
-let navigationSteps = [];
+let darkMode = true;
+
+let darkLayer = null;
+
+let lightLayer = null;
 
 let lastRouteUpdate = 0;
 
@@ -63,7 +67,7 @@ const destinationIcon = L.divIcon({
 });
 
 // =====================================
-// CREAR MAPA
+// INICIALIZAR MAPA
 // =====================================
 
 function initMap(lat, lon) {
@@ -73,9 +77,7 @@ function initMap(lat, lon) {
     attributionControl: true,
   });
 
-  // MAPA OSCURO
-
-  L.tileLayer(
+  darkLayer = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
 
     {
@@ -83,7 +85,19 @@ function initMap(lat, lon) {
 
       attribution: "&copy; OpenStreetMap &copy; CARTO",
     },
-  ).addTo(map);
+  );
+
+  lightLayer = L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+
+    {
+      maxZoom: 20,
+
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+    },
+  );
+
+  darkLayer.addTo(map);
 
   map.setView(
     [lat, lon],
@@ -97,8 +111,6 @@ function initMap(lat, lon) {
     lon,
   );
 
-  // arregla render móvil
-
   setTimeout(() => {
     map.invalidateSize();
   }, 500);
@@ -106,7 +118,7 @@ function initMap(lat, lon) {
   map.on(
     "click",
 
-    (e) => {
+    function (e) {
       destination = e.latlng;
 
       if (destinationMarker) {
@@ -128,10 +140,50 @@ function initMap(lat, lon) {
       calculateRoute();
     },
   );
+
+  setupMapButtons();
 }
 
 // =====================================
-// POSICION USUARIO
+// BOTONES MAPA
+// =====================================
+
+function setupMapButtons() {
+  const sizeButton = document.getElementById("map-size-btn");
+
+  const themeButton = document.getElementById("map-theme-btn");
+
+  sizeButton.onclick = function () {
+    const container = document.getElementById("map-container");
+
+    container.classList.toggle("expanded");
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 350);
+  };
+
+  themeButton.onclick = function () {
+    if (darkMode) {
+      map.removeLayer(darkLayer);
+
+      lightLayer.addTo(map);
+
+      themeButton.textContent = "☀️";
+    } else {
+      map.removeLayer(lightLayer);
+
+      darkLayer.addTo(map);
+
+      themeButton.textContent = "🌙";
+    }
+
+    darkMode = !darkMode;
+  };
+}
+
+// =====================================
+// UBICACION
 // =====================================
 
 function updateUserLocation(lat, lon) {
@@ -140,6 +192,12 @@ function updateUserLocation(lat, lon) {
 
     lon,
   };
+
+  updateStreet(
+    lat,
+
+    lon,
+  );
 
   if (!map) {
     initMap(
@@ -157,8 +215,6 @@ function updateUserLocation(lat, lon) {
     lon,
   );
 
-  // evitar llamadas excesivas OSRM
-
   const now = Date.now();
 
   if (destination && now - lastRouteUpdate > 10000) {
@@ -169,11 +225,11 @@ function updateUserLocation(lat, lon) {
 }
 
 function updateUserMarker(lat, lon) {
-  const pos = [lat, lon];
+  const position = [lat, lon];
 
   if (!userMarker) {
     userMarker = L.marker(
-      pos,
+      position,
 
       {
         icon: userIcon,
@@ -184,7 +240,7 @@ function updateUserMarker(lat, lon) {
 
       .addTo(map);
   } else {
-    userMarker.setLatLng(pos);
+    userMarker.setLatLng(position);
   }
 }
 
@@ -210,14 +266,12 @@ async function calculateRoute() {
 
     currentRoute = data.routes[0];
 
-    navigationSteps = currentRoute.legs[0].steps;
-
     drawRoute(currentRoute.geometry);
 
     updateNavigationInfo();
   } catch (error) {
     console.error(
-      "OSRM error",
+      "OSRM",
 
       error,
     );
@@ -233,10 +287,10 @@ function drawRoute(geometry) {
     map.removeLayer(routeLayer);
   }
 
-  const points = geometry.coordinates.map((p) => [p[1], p[0]]);
+  const coords = geometry.coordinates.map((point) => [point[1], point[0]]);
 
   routeLayer = L.polyline(
-    points,
+    coords,
 
     {
       color: "#00ffff",
@@ -248,53 +302,50 @@ function drawRoute(geometry) {
   )
 
     .addTo(map);
-
-  map.fitBounds(
-    routeLayer.getBounds(),
-
-    {
-      padding: [40, 40],
-    },
-  );
 }
 
 // =====================================
-// INFORMACION NAVEGACION
+// DATOS NAVEGACION
 // =====================================
 
 function updateNavigationInfo() {
   if (!currentRoute) return;
 
-  const distance = currentRoute.distance;
-
-  const duration = currentRoute.duration;
-
-  document.getElementById("distance").textContent = formatDistance(distance);
+  document.getElementById("distance").textContent = formatDistance(
+    currentRoute.distance,
+  );
 
   document.getElementById("eta").textContent =
-    Math.ceil(duration / 60) + " min";
-
-  if (navigationSteps.length) {
-    const step = navigationSteps[0];
-
-    const maneuver = step.maneuver;
-
-    let text = "Continúe recto";
-
-    if (maneuver.modifier) {
-      text = maneuver.modifier
-
-        .replace("_", " ")
-
-        .toUpperCase();
-    }
-
-    document.getElementById("instruction").textContent = text;
-  }
+    Math.ceil(currentRoute.duration / 60) + " min";
 }
 
 function formatDistance(meters) {
-  if (meters > 1000) return (meters / 1000).toFixed(1) + " km";
+  if (meters >= 1000) return (meters / 1000).toFixed(1) + " km";
 
   return Math.round(meters) + " m";
+}
+
+// =====================================
+// CALLE ACTUAL
+// =====================================
+
+async function updateStreet(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+
+    const response = await fetch(url);
+
+    const data = await response.json();
+
+    const street =
+      data.address.road || data.address.pedestrian || "Zona desconocida";
+
+    document.getElementById("street").textContent = street;
+  } catch (error) {
+    console.error(
+      "Street error",
+
+      error,
+    );
+  }
 }

@@ -1,59 +1,79 @@
-/* ===========================
+/* =====================================
    RESET
-=========================== */
+===================================== */
+
 
 * {
+
     margin: 0;
+
     padding: 0;
+
     box-sizing: border-box;
+
 }
+
 
 
 html,
 body {
 
+
     width: 100%;
+
     height: 100%;
+
 
     overflow: hidden;
 
+
     background: #000;
 
+
+    color: white;
+
+
     font-family:
+
         Arial,
         Helvetica,
         sans-serif;
 
-    color: white;
 
 }
 
 
-/* ===========================
-   CONTENEDOR PRINCIPAL
-=========================== */
+
+
+
+/* =====================================
+   CAMARA
+===================================== */
 
 
 #camera-container {
 
+
     position: relative;
+
 
     width: 100%;
 
+
     height: 70dvh;
+
 
     overflow: hidden;
 
+
     background: black;
+
 
 }
 
 
-/*
- Compatibilidad navegadores antiguos
-*/
 
-@supports not (height: 70dvh) {
+@supports not (height:70dvh) {
 
     #camera-container {
 
@@ -65,55 +85,76 @@ body {
 
 
 
+
 #camera {
+
 
     width: 100%;
 
+
     height: 100%;
 
+
     object-fit: cover;
+
 
 }
 
 
 
-/* ===========================
-   HUD GENERAL
-=========================== */
+
+
+
+
+/* =====================================
+   HUD OVERLAY
+===================================== */
 
 
 #overlay {
 
+
     position: absolute;
+
 
     inset: 0;
 
+
     pointer-events: none;
+
 
 }
 
 
 
-/* ===========================
-   INFORMACION GPS
-=========================== */
+
+
+
+
+/* =====================================
+   PANEL INFORMACION
+===================================== */
 
 
 #info-panel {
 
+
     position: absolute;
+
 
     top: 12px;
 
+
     left: 12px;
+
 
 
     padding: 10px 14px;
 
 
-    width: auto;
 
     max-width: 55vw;
+
 
 
     background:
@@ -121,24 +162,36 @@ body {
         rgba(0, 0, 0, .55);
 
 
+
     border-radius: 12px;
 
 
-    backdrop-filter: blur(8px);
+
+    backdrop-filter:
+
+        blur(8px);
 
 
-    font-size: clamp(11px, 3vw, 15px);
+
+    font-size:
+
+        clamp(11px, 3vw, 15px);
 
 
-    line-height: 1.5;
+
+    line-height: 1.55;
+
 
 
 }
 
 
+
 #info-panel div {
 
+
     white-space: nowrap;
+
 
 }
 
@@ -146,16 +199,21 @@ body {
 
 #info-panel strong {
 
+
     color: #ddd;
+
 
 }
 
 
 
 
-/* ===========================
+
+
+
+/* =====================================
    BRUJULA
-=========================== */
+===================================== */
 
 
 #compass-panel {
@@ -177,13 +235,20 @@ body {
 
 
 
+
 #compass {
 
 
-    width: clamp(65px, 18vw, 100px);
+    width:
+
+        clamp(65px, 18vw, 100px);
 
 
-    height: clamp(65px, 18vw, 100px);
+
+    height:
+
+        clamp(65px, 18vw, 100px);
+
 
 
     display: flex;
@@ -195,7 +260,11 @@ body {
     align-items: center;
 
 
-    font-size: clamp(40px, 12vw, 65px);
+
+    font-size:
+
+        clamp(40px, 12vw, 65px);
+
 
 
     background:
@@ -203,13 +272,25 @@ body {
         rgba(0, 0, 0, .5);
 
 
+
     border-radius: 50%;
 
 
-    backdrop-filter: blur(6px);
+
+    backdrop-filter:
+
+        blur(6px);
+
+
+
+    transition:
+
+        transform .15s linear;
 
 
 }
+
+
 
 
 
@@ -219,18 +300,25 @@ body {
     margin-top: 5px;
 
 
-    font-size: clamp(14px, 4vw, 20px);
-
-
-    background:
-
-        rgba(0, 0, 0, .5);
-
 
     padding: 4px 10px;
 
 
+
+    background:
+
+        rgba(0, 0, 0, .55);
+
+
+
     border-radius: 8px;
+
+
+
+    font-size:
+
+        clamp(14px, 4vw, 20px);
+
 
 
 }
@@ -239,9 +327,11 @@ body {
 
 
 
-/* ===========================
+
+
+/* =====================================
    NAVEGACION
-=========================== */
+===================================== */
 
 
 #navigation {
@@ -250,16 +340,23 @@ body {
     position: absolute;
 
 
-    bottom: 15px;
-
 
     left: 50%;
 
 
-    transform: translateX(-50%);
+
+    bottom: 18px;
+
+
+
+    transform:
+
+        translateX(-50%);
+
 
 
     width: 90%;
+
 
 
     text-align: center;
@@ -269,23 +366,63 @@ body {
 
 
 
+
 #arrow {
 
 
     font-size:
 
-        clamp(50px, 15vw, 90px);
+        clamp(55px, 16vw, 95px);
 
-
-    line-height: 1;
 
 
     font-weight: bold;
 
 
+
+    line-height: 1;
+
+
+
     text-shadow:
 
         0 0 15px black;
+
+
+
+}
+
+
+
+#street {
+
+
+    display: inline-block;
+
+
+
+    margin-top: 5px;
+
+
+
+    padding: 5px 14px;
+
+
+
+    background:
+
+        rgba(0, 0, 0, .55);
+
+
+
+    border-radius: 10px;
+
+
+
+    font-size:
+
+        clamp(13px, 4vw, 18px);
+
 
 
 }
@@ -295,32 +432,43 @@ body {
 #instruction {
 
 
-    margin-top: 8px;
-
-
-    padding: 8px 15px;
-
 
     display: inline-block;
 
 
-    max-width: 90%;
+
+    margin-top: 8px;
+
+
+
+    padding: 8px 16px;
+
+
+
+    max-width: 95%;
+
 
 
     background:
 
-        rgba(0, 0, 0, .6);
+        rgba(0, 0, 0, .65);
+
 
 
     border-radius: 12px;
 
 
-    backdrop-filter: blur(6px);
+
+    backdrop-filter:
+
+        blur(8px);
+
 
 
     font-size:
 
         clamp(14px, 4vw, 22px);
+
 
 
     font-weight: bold;
@@ -332,27 +480,37 @@ body {
 
 
 
-/* ===========================
-   MAPA
-=========================== */
 
 
-#map {
+
+/* =====================================
+   CONTENEDOR MAPA
+===================================== */
+
+
+#map-container {
+
+
+    position: relative;
+
 
 
     width: 100%;
 
 
+
     height: 30dvh;
 
 
-    min-height: 200px;
+
+    min-height: 180px;
 
 
-    border-top: 2px solid #222;
 
+    transition:
 
-    z-index: 1;
+        height .35s ease;
+
 
 
 }
@@ -361,7 +519,7 @@ body {
 
 @supports not (height:30dvh) {
 
-    #map {
+    #map-container {
 
         height: 30vh;
 
@@ -372,20 +530,158 @@ body {
 
 
 
-/* ===========================
-   LEAFLET MOBILE
-=========================== */
+#map-container.expanded {
+
+
+    height: 70dvh;
+
+
+}
+
+
+
+
+
+#map {
+
+
+    width: 100%;
+
+
+    height: 100%;
+
+
+
+    border-top:
+
+        2px solid #222;
+
+
+
+}
+
+
+
+
+
+
+
+/* =====================================
+   BOTONES MAPA
+===================================== */
+
+
+#map-size-btn,
+#map-theme-btn {
+
+
+
+    position: absolute;
+
+
+    right: 15px;
+
+
+    z-index: 9999;
+
+
+
+    width: 48px;
+
+
+    height: 48px;
+
+
+
+    border: none;
+
+
+
+    border-radius: 50%;
+
+
+
+    background:
+
+        rgba(0, 0, 0, .75);
+
+
+
+    color: white;
+
+
+
+    font-size: 22px;
+
+
+
+    display: flex;
+
+
+
+    justify-content: center;
+
+
+
+    align-items: center;
+
+
+
+    box-shadow:
+
+        0 0 10px rgba(0, 0, 0, .5);
+
+
+
+}
+
+
+
+
+#map-size-btn {
+
+
+    bottom: 70px;
+
+
+}
+
+
+
+#map-theme-btn {
+
+
+    bottom: 15px;
+
+
+}
+
+
+
+
+
+
+/* =====================================
+   LEAFLET
+===================================== */
 
 
 .leaflet-control-zoom {
 
 
-    transform: scale(1.15);
+    transform:
 
-    transform-origin: top left;
+        scale(1.15);
+
+
+
+    transform-origin:
+
+        top left;
 
 
 }
+
 
 
 .leaflet-control-attribution {
@@ -398,23 +694,32 @@ body {
 
 
 
-/* ===========================
-   PANTALLAS PEQUEÑAS
-=========================== */
+
+
+
+
+
+/* =====================================
+   MOVILES PEQUEÑOS
+===================================== */
 
 
 @media(max-width:400px) {
 
 
+
     #info-panel {
 
-
-        max-width: 50vw;
 
         font-size: 11px;
 
 
+        padding: 8px;
+
+
     }
+
+
 
 
     #instruction {
@@ -426,17 +731,23 @@ body {
     }
 
 
+
+
 }
 
 
 
 
-/* ===========================
-   HORIZONTAL
-=========================== */
 
 
-@media (orientation:landscape) {
+
+
+/* =====================================
+   LANDSCAPE
+===================================== */
+
+
+@media(orientation:landscape) {
 
 
     #camera-container {
@@ -444,15 +755,19 @@ body {
 
         height: 75dvh;
 
+
     }
 
 
-    #map {
+
+    #map-container {
 
 
         height: 25dvh;
 
+
     }
+
 
 
 }
