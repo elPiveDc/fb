@@ -2,214 +2,109 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Camera + GPS + Compass</title>
+    <title>Navigation HUD</title>
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        background: #111;
-        overflow: hidden;
-        font-family: Arial, Helvetica, sans-serif;
-      }
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-      #container {
-        width: 100vw;
-        height: 75vh;
-        position: relative;
-        overflow: hidden;
-        background: black;
-      }
-
-      video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      #leftPanel {
-        position: absolute;
-
-        left: 20px;
-        top: 20px;
-
-        color: white;
-
-        background: rgba(0, 0, 0, 0.45);
-
-        padding: 15px;
-
-        border-radius: 12px;
-
-        font-size: 18px;
-
-        line-height: 1.8;
-
-        backdrop-filter: blur(4px);
-      }
-
-      #rightPanel {
-        position: absolute;
-
-        right: 30px;
-
-        top: 20px;
-
-        width: 170px;
-
-        text-align: center;
-
-        color: white;
-      }
-
-      #compass {
-        width: 150px;
-
-        height: 150px;
-
-        border-radius: 50%;
-
-        border: 4px solid white;
-
-        background: rgba(0, 0, 0, 0.4);
-
-        position: relative;
-
-        margin: auto;
-
-        transition: transform 0.1s linear;
-      }
-
-      #needle {
-        position: absolute;
-
-        width: 4px;
-
-        height: 60px;
-
-        background: red;
-
-        left: 50%;
-
-        top: 15px;
-
-        transform: translateX(-50%);
-      }
-
-      #north {
-        position: absolute;
-        top: 5px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-weight: bold;
-      }
-
-      #heading {
-        margin-top: 15px;
-        font-size: 24px;
-      }
-
-      #bottom {
-        height: 25vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        font-size: 28px;
-      }
-    </style>
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body>
-    <div id="container">
-      <video id="video" autoplay playsinline></video>
+    <!-- ======================
+         CAMARA
+    ======================= -->
 
-      <div id="leftPanel">
-        <div><b>Latitud:</b> <span id="lat">---</span></div>
+    <div id="camera-container">
+      <video id="camera" autoplay playsinline muted></video>
 
-        <div><b>Longitud:</b> <span id="lon">---</span></div>
+      <!-- HUD SOBRE CAMARA -->
 
-        <div><b>Precisión:</b> <span id="acc">---</span></div>
+      <div id="overlay">
+        <!-- DATOS -->
 
-        <div><b>Altitud:</b> <span id="alt">---</span></div>
-      </div>
+        <div id="info-panel">
+          <div>
+            <strong>Hora:</strong>
+            <span id="time">--:--:--</span>
+          </div>
 
-      <div id="rightPanel">
-        <div id="compass">
-          <div id="north">N</div>
+          <div>
+            <strong>Lat:</strong>
+            <span id="latitude">---</span>
+          </div>
 
-          <div id="needle"></div>
+          <div>
+            <strong>Lon:</strong>
+            <span id="longitude">---</span>
+          </div>
+
+          <div>
+            <strong>Alt:</strong>
+            <span id="altitude">---</span>
+          </div>
+
+          <div>
+            <strong>Precisión:</strong>
+            <span id="accuracy">---</span>
+          </div>
+
+          <div>
+            <strong>Velocidad:</strong>
+            <span id="speed">---</span>
+          </div>
+
+          <div>
+            <strong>Distancia:</strong>
+            <span id="distance">---</span>
+          </div>
+
+          <div>
+            <strong>ETA:</strong>
+            <span id="eta">---</span>
+          </div>
         </div>
 
-        <div id="heading">0°</div>
+        <!-- BRUJULA -->
+
+        <div id="compass-panel">
+          <div id="compass">🧭</div>
+
+          <div id="heading">0°</div>
+        </div>
+
+        <!-- INDICACIONES -->
+
+        <div id="navigation">
+          <div id="arrow">↑</div>
+
+          <div id="instruction">Seleccione un destino en el mapa</div>
+        </div>
       </div>
     </div>
 
-    <div id="bottom">Camera HUD Demo</div>
+    <!-- ======================
+         MAPA
+    ======================= -->
 
-    <script>
-      const video = document.getElementById("video");
+    <div id="map"></div>
 
-      navigator.mediaDevices
-        .getUserMedia({
-          video: {
-            facingMode: "environment",
-          },
-          audio: false,
-        })
-        .then((stream) => {
-          video.srcObject = stream;
-        })
-        .catch((err) => {
-          alert(err);
-        });
+    <!-- ======================
+         LIBRERIAS
+    ======================= -->
 
-      function updatePosition(pos) {
-        document.getElementById("lat").textContent =
-          pos.coords.latitude.toFixed(6);
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-        document.getElementById("lon").textContent =
-          pos.coords.longitude.toFixed(6);
+    <!-- ======================
+         MODULOS
+    ======================= -->
 
-        document.getElementById("acc").textContent =
-          pos.coords.accuracy.toFixed(1) + " m";
+    <script src="map.js"></script>
 
-        if (pos.coords.altitude != null)
-          document.getElementById("alt").textContent =
-            pos.coords.altitude.toFixed(1) + " m";
-      }
-
-      navigator.geolocation.watchPosition(updatePosition, console.error, {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-      });
-
-      function updateCompass(heading) {
-        document.getElementById("heading").textContent =
-          Math.round(heading) + "°";
-
-        document.getElementById("compass").style.transform =
-          "rotate(" + -heading + "deg)";
-      }
-
-      if (window.DeviceOrientationEvent) {
-        window.addEventListener("deviceorientation", function (e) {
-          let heading;
-
-          if (e.webkitCompassHeading) {
-            heading = e.webkitCompassHeading;
-          } else if (e.alpha !== null) {
-            heading = 360 - e.alpha;
-          }
-
-          if (heading !== undefined) {
-            updateCompass(heading);
-          }
-        });
-      }
-    </script>
+    <script src="app.js"></script>
   </body>
 </html>
