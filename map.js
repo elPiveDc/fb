@@ -28,16 +28,25 @@ let lightLayer;
 
 let navigationMode = "walking";
 
-// control de peticiones concurrentes (evita pintar una ruta vieja
-// encima de una más reciente si el usuario cambia de destino rápido)
+// control de peticiones concurrentes de rutas
 let routeRequestId = 0;
 
-// throttle para no saturar Nominatim (máx. 1 request/seg permitido,
-// acá usamos un margen prudente de 3 seg y solo si hay movimiento real)
+// throttle Nominatim (calle actual)
 let lastStreetLookup = 0;
 let lastStreetCoords = null;
 const STREET_LOOKUP_INTERVAL_MS = 3000;
 const STREET_LOOKUP_MIN_DISTANCE_M = 15;
+
+// rumbo hacia el objetivo actual (destino o siguiente maniobra)
+let targetBearing = 0;
+
+// throttle Overpass (POIs cercanos)
+let lastPOILookup = 0;
+let lastPOICoords = null;
+const POI_LOOKUP_INTERVAL_MS = 20000;
+const POI_LOOKUP_MIN_DISTANCE_M = 40;
+const POI_NOTIFY_RADIUS_M = 120;
+const notifiedPOIIds = new Set();
 
 // =====================================
 // ICONOS
@@ -225,6 +234,12 @@ function updateUserLocation(lat, lon) {
     lon,
   );
 
+  checkNearbyPOIs(
+    lat,
+
+    lon,
+  );
+
   if (!map) {
     initMap(
       lat,
@@ -240,6 +255,8 @@ function updateUserLocation(lat, lon) {
 
     lon,
   );
+
+  updateTargetBearing();
 }
 
 function updateUserMarker(lat, lon) {
@@ -267,8 +284,6 @@ function updateUserMarker(lat, lon) {
 async function calculateRoute() {
   if (!currentLocation || !destination) return;
 
-  // identificador único de esta petición: si llega una más nueva
-  // antes de que esta responda, esta se descarta al terminar
   const requestId = ++routeRequestId;
 
   try {
@@ -280,8 +295,6 @@ async function calculateRoute() {
       navigationMode,
     );
 
-    // si mientras esperábamos la respuesta se lanzó otra petición
-    // más reciente (nuevo click o cambio de modo), ignoramos esta
     if (requestId !== routeRequestId) return;
 
     currentRoute = route;
@@ -291,6 +304,8 @@ async function calculateRoute() {
     drawRoute(route.geometry);
 
     updateNavigationInfo(route);
+
+    updateTargetBearing();
   } catch (error) {
     if (requestId !== routeRequestId) return;
 
@@ -386,6 +401,73 @@ function generateInstruction(step) {
 }
 
 // =====================================
+// FLECHA DE NAVEGACION (rumbo relativo)
+// =====================================
+// La flecha apunta hacia el objetivo (siguiente maniobra o destino)
+// RELATIVO a hacia dónde está mirando el usuario ahora mismo. Si el
+// usuario está de espaldas al objetivo, la flecha gira 180°.
+
+function updateTargetBearing() {
+  if (!currentLocation) return;
+
+  let target = destination;
+
+  // si hay un paso de ruta con ubicación exacta, apuntamos ahí
+  // (guía giro a giro en vez de solo hacia el destino final)
+  if (navigationSteps.length && navigationSteps[0].maneuver?.location) {
+    const [lon, lat] = navigationSteps[0].maneuver.location;
+
+    target = { lat, lon };
+  }
+
+  if (!target) return;
+
+  targetBearing = calculateBearing(
+    currentLocation.lat,
+    currentLocation.lon,
+    target.lat,
+    target.lon,
+  );
+
+  renderArrow();
+}
+
+function renderArrow() {
+  const arrowEl = document.getElementById("arrow");
+
+  if (!arrowEl) return;
+
+  if (!destination) {
+    arrowEl.style.transform = "rotate(0deg)";
+
+    return;
+  }
+
+  // rotación relativa: rumbo al objetivo menos hacia dónde miro ahora
+  const relative = (((targetBearing - currentHeading) % 360) + 360) % 360;
+
+  arrowEl.style.transform = `rotate(${relative}deg)`;
+}
+
+// fórmula estándar de rumbo inicial entre dos coordenadas
+function calculateBearing(lat1, lon1, lat2, lon2) {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+
+  const dLon = toRad(lon2 - lon1);
+
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+
+  const x =
+    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+
+  const bearing = toDeg(Math.atan2(y, x));
+
+  return (bearing + 360) % 360;
+}
+
+// =====================================
 // MODO
 // =====================================
 
@@ -399,7 +481,7 @@ function updateRouteModeLabel() {
 }
 
 // =====================================
-// CALLE ACTUAL (con throttle para respetar Nominatim)
+// CALLE ACTUAL (throttle Nominatim)
 // =====================================
 
 async function updateStreet(lat, lon) {
@@ -434,7 +516,77 @@ async function updateStreet(lat, lon) {
   } catch (e) {}
 }
 
-// distancia aproximada en metros entre dos coordenadas (fórmula haversine)
+// =====================================
+// LUGARES CERCANOS (throttle Overpass)
+// =====================================
+
+async function checkNearbyPOIs(lat, lon) {
+  const now = Date.now();
+
+  if (lastPOICoords) {
+    const moved = haversineDistance(
+      lastPOICoords.lat,
+      lastPOICoords.lon,
+      lat,
+      lon,
+    );
+
+    const tooSoon = now - lastPOILookup < POI_LOOKUP_INTERVAL_MS;
+    const tooClose = moved < POI_LOOKUP_MIN_DISTANCE_M;
+
+    if (tooSoon && tooClose) return;
+  }
+
+  lastPOILookup = now;
+  lastPOICoords = { lat, lon };
+
+  try {
+    const pois = await fetchNearbyPOIs(lat, lon, POI_NOTIFY_RADIUS_M);
+
+    pois.forEach((poi) => {
+      if (notifiedPOIIds.has(poi.id)) return;
+
+      notifiedPOIIds.add(poi.id);
+
+      showPOINotification(poi);
+    });
+
+    // evita que el Set crezca sin límite en viajes muy largos
+    if (notifiedPOIIds.size > 300) notifiedPOIIds.clear();
+  } catch (error) {
+    console.warn("No se pudieron obtener lugares cercanos:", error);
+  }
+}
+
+function showPOINotification(poi) {
+  const container = document.getElementById("poi-notifications");
+
+  if (!container) return;
+
+  const toast = document.createElement("div");
+
+  toast.className = "poi-toast";
+
+  toast.innerHTML = `<span class="poi-icon">${poi.icon}</span><span class="poi-text">${poi.label}: ${escapeHtml(poi.name)}</span>`;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("poi-toast-out");
+
+    setTimeout(() => toast.remove(), 400);
+  }, 5000);
+}
+
+// evita inyección de HTML si el nombre del POI trae caracteres raros
+function escapeHtml(text) {
+  const div = document.createElement("div");
+
+  div.textContent = text;
+
+  return div.innerHTML;
+}
+
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
 

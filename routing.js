@@ -80,3 +80,89 @@ function normalizeOSRMRoute(route) {
     })),
   };
 }
+
+// =====================================
+// LUGARES CERCANOS (POIs) - Overpass API
+// =====================================
+// Overpass es gratuito y sin API key, pero tiene política de uso justo.
+// El throttling real vive en map.js (checkNearbyPOIs) — acá solo se
+// hace la consulta cuando map.js decide que corresponde.
+
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+
+async function fetchNearbyPOIs(lat, lon, radius = 120) {
+  const query = `
+    [out:json][timeout:10];
+    (
+      node["amenity"="police"](around:${radius},${lat},${lon});
+      node["amenity"="place_of_worship"](around:${radius},${lat},${lon});
+      node["amenity"="pharmacy"](around:${radius},${lat},${lon});
+      node["shop"](around:${radius},${lat},${lon});
+      node["highway"="traffic_signals"](around:${radius},${lat},${lon});
+      node["highway"="crossing"](around:${radius},${lat},${lon});
+    );
+    out body;
+  `;
+
+  const response = await fetch(OVERPASS_URL, {
+    method: "POST",
+    body: query,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error del servidor de lugares (${response.status})`);
+  }
+
+  const data = await response.json();
+
+  return (data.elements || []).map(normalizePOI).filter((poi) => poi !== null);
+}
+
+// =====================================
+// CLASIFICAR ETIQUETAS OSM -> POI LEGIBLE
+// =====================================
+
+function normalizePOI(element) {
+  const tags = element.tags || {};
+
+  const category = classifyPOI(tags);
+
+  if (!category) return null;
+
+  return {
+    id: element.id,
+    lat: element.lat,
+    lon: element.lon,
+    name: tags.name || category.defaultName,
+    icon: category.icon,
+    label: category.label,
+  };
+}
+
+function classifyPOI(tags) {
+  if (tags.amenity === "police") {
+    return { icon: "🚓", label: "Policía", defaultName: "Comisaría" };
+  }
+
+  if (tags.amenity === "place_of_worship") {
+    return { icon: "⛪", label: "Iglesia", defaultName: "Lugar de culto" };
+  }
+
+  if (tags.amenity === "pharmacy") {
+    return { icon: "💊", label: "Farmacia", defaultName: "Farmacia" };
+  }
+
+  if (tags.shop) {
+    return { icon: "🛍️", label: "Tienda", defaultName: "Tienda" };
+  }
+
+  if (tags.highway === "traffic_signals") {
+    return { icon: "🚦", label: "Cruce", defaultName: "Semáforo" };
+  }
+
+  if (tags.highway === "crossing") {
+    return { icon: "🚸", label: "Cruce peatonal", defaultName: "Cruce" };
+  }
+
+  return null;
+}
