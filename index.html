@@ -121,9 +121,27 @@
         </div>
 
         <!-- ==========================
-            NOTIFICACIONES DE LUGARES CERCANOS
+              CAPA AR: LUGARES CERCANOS SOBRE LA CAMARA
         =========================== -->
-        <div id="poi-notifications"></div>
+
+        <div id="ar-poi-layer"></div>
+
+        <!-- ==========================
+              BUSCADOR DE DESTINO
+        =========================== -->
+
+        <div id="destination-search">
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Buscar destino..."
+            autocomplete="off"
+          />
+
+          <button id="search-btn" aria-label="Buscar destino">🔍</button>
+
+          <div id="search-results"></div>
+        </div>
 
         <!-- ==========================
              NAVEGACION HUD

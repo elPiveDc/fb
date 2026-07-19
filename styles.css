@@ -394,84 +394,193 @@ body {
 }
 
 /* =====================================
-   NOTIFICACIONES DE LUGARES CERCANOS
+   CAPA AR: LUGARES CERCANOS
 ===================================== */
 
-#poi-notifications {
+#ar-poi-layer {
   position: absolute;
 
-  top: calc(65px + env(safe-area-inset-top, 0px));
+  inset: 0;
 
-  left: 50%;
+  pointer-events: none;
 
-  transform: translateX(-50%);
+  overflow: hidden;
+}
+
+.ar-poi-marker {
+  position: absolute;
 
   display: flex;
 
   flex-direction: column;
 
-  gap: 6px;
-
   align-items: center;
 
-  pointer-events: none;
+  gap: 2px;
 
-  z-index: 500;
+  transition:
+    left 0.25s ease,
+    top 0.25s ease,
+    opacity 0.25s ease,
+    transform 0.25s ease;
 
-  max-width: 90vw;
+  text-align: center;
 }
 
-.poi-toast {
-  display: flex;
+.ar-poi-icon {
+  font-size: clamp(24px, 7vw, 34px);
 
-  align-items: center;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.8));
+}
 
-  gap: 8px;
+.ar-poi-name {
+  max-width: 120px;
 
-  padding: 8px 14px;
+  padding: 2px 8px;
 
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
+
+  border-radius: 6px;
+
+  font-size: clamp(10px, 2.8vw, 12px);
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+.ar-poi-distance {
+  padding: 1px 8px;
+
+  background: rgba(0, 229, 255, 0.85);
+
+  color: #000;
 
   border-radius: 10px;
+
+  font-size: clamp(10px, 2.8vw, 12px);
+
+  font-weight: bold;
+}
+
+/* =====================================
+   BUSCADOR DE DESTINO
+===================================== */
+
+#destination-search {
+  position: absolute;
+
+  top: calc(100px + env(safe-area-inset-top, 0px));
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  width: min(92vw, 340px);
+
+  display: flex;
+
+  gap: 6px;
+
+  pointer-events: auto;
+
+  z-index: 600;
+}
+
+#search-input {
+  flex: 1;
+
+  padding: 9px 12px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.65);
 
   -webkit-backdrop-filter: blur(8px);
 
   backdrop-filter: blur(8px);
 
-  font-size: clamp(12px, 3.2vw, 15px);
+  color: white;
 
-  white-space: nowrap;
+  font-size: clamp(13px, 3.5vw, 15px);
 
-  animation: poi-slide-in 0.3s ease;
+  outline: none;
 }
 
-.poi-toast-out {
-  animation: poi-slide-out 0.4s ease forwards;
+#search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-@keyframes poi-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
+#search-btn {
+  width: 40px;
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.65);
+
+  color: white;
+
+  font-size: 16px;
+
+  cursor: pointer;
+
+  touch-action: manipulation;
 }
 
-@keyframes poi-slide-out {
-  from {
-    opacity: 1;
-  }
+#search-results {
+  position: absolute;
 
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
+  top: calc(100% + 6px);
+
+  left: 0;
+
+  width: 100%;
+
+  max-height: 200px;
+
+  overflow-y: auto;
+
+  background: rgba(0, 0, 0, 0.85);
+
+  -webkit-backdrop-filter: blur(10px);
+
+  backdrop-filter: blur(10px);
+
+  border-radius: 10px;
+
+  display: none;
 }
 
-.poi-icon {
-  font-size: 1.2em;
+#search-results.visible {
+  display: block;
+}
+
+.search-result-item {
+  padding: 10px 14px;
+
+  font-size: clamp(12px, 3.3vw, 14px);
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  cursor: pointer;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-loading {
+  opacity: 0.6;
+
+  cursor: default;
 }

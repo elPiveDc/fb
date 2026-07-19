@@ -166,3 +166,37 @@ function classifyPOI(tags) {
 
   return null;
 }
+
+// =====================================
+// BUSQUEDA DE LUGARES (Geocoding) - Nominatim
+// =====================================
+// Permite marcar un destino automáticamente por nombre/dirección,
+// en vez de tocar el mapa manualmente. Gratis, sin API key.
+// Solo se llama cuando el usuario busca algo (no en loop), así que
+// no compite con el límite de uso de Nominatim que ya cuidamos
+// en updateStreet().
+
+const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+
+async function searchPlace(query) {
+  const url = `${NOMINATIM_SEARCH_URL}?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+
+  const response = await fetch(url, {
+    headers: {
+      "Accept-Language": "es",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error de búsqueda (${response.status})`);
+  }
+
+  const data = await response.json();
+
+  return data.map((item) => ({
+    id: item.place_id,
+    name: item.display_name,
+    lat: parseFloat(item.lat),
+    lon: parseFloat(item.lon),
+  }));
+}

@@ -1,43 +1,23 @@
 // =====================================
 // VARIABLES
 // =====================================
-
 let map = null;
-
 let userMarker = null;
-
 let destinationMarker = null;
-
 let routeLayer = null;
-
 let currentLocation = null;
-
 let destination = null;
-
 let currentRoute = null;
-
 let navigationSteps = [];
-
 let darkMode = true;
-
 let darkLayer;
-
 let lightLayer;
-
-// modo navegación
-
 let navigationMode = "walking";
-
-// control de peticiones concurrentes de rutas
 let routeRequestId = 0;
-
-// throttle Nominatim (calle actual)
 let lastStreetLookup = 0;
 let lastStreetCoords = null;
 const STREET_LOOKUP_INTERVAL_MS = 3000;
 const STREET_LOOKUP_MIN_DISTANCE_M = 15;
-
-// rumbo hacia el objetivo actual (destino o siguiente maniobra)
 let targetBearing = 0;
 
 // throttle Overpass (POIs cercanos)
@@ -46,7 +26,11 @@ let lastPOICoords = null;
 const POI_LOOKUP_INTERVAL_MS = 20000;
 const POI_LOOKUP_MIN_DISTANCE_M = 40;
 const POI_NOTIFY_RADIUS_M = 120;
-const notifiedPOIIds = new Set();
+const POI_REMOVE_RADIUS_M = POI_NOTIFY_RADIUS_M * 1.3;
+const AR_FOV_HALF_DEG = 45;
+
+// POIs actualmente rastreados: id -> {lat, lon, name, icon, label, el, verticalSlot}
+const activePOIs = new Map();
 
 // =====================================
 // ICONOS
@@ -110,51 +94,41 @@ function initMap(lat, lon) {
 
   darkLayer.addTo(map);
 
-  map.setView(
-    [lat, lon],
+  map.setView([lat, lon], 17);
 
-    17,
-  );
-
-  updateUserMarker(
-    lat,
-
-    lon,
-  );
+  updateUserMarker(lat, lon);
 
   setTimeout(() => {
     map.invalidateSize();
   }, 500);
 
-  map.on(
-    "click",
-
-    (e) => {
-      destination = {
-        lat: e.latlng.lat,
-
-        lon: e.latlng.lng,
-      };
-
-      if (destinationMarker) {
-        map.removeLayer(destinationMarker);
-      }
-
-      destinationMarker = L.marker(
-        [destination.lat, destination.lon],
-
-        {
-          icon: destinationIcon,
-        },
-      )
-
-        .addTo(map);
-
-      calculateRoute();
-    },
-  );
+  map.on("click", (e) => {
+    setDestination(e.latlng.lat, e.latlng.lng);
+  });
 
   setupMapButtons();
+
+  setupSearch();
+}
+
+// =====================================
+// DESTINO (compartido entre click en mapa y buscador)
+// =====================================
+
+function setDestination(lat, lon, options = {}) {
+  destination = { lat, lon };
+
+  if (destinationMarker) map.removeLayer(destinationMarker);
+
+  destinationMarker = L.marker([lat, lon], {
+    icon: destinationIcon,
+  }).addTo(map);
+
+  if (options.recenter) {
+    map.setView([lat, lon], 16);
+  }
+
+  calculateRoute();
 }
 
 // =====================================
@@ -165,11 +139,7 @@ function setupMapButtons() {
   const sizeBtn = document.getElementById("map-size-btn");
 
   sizeBtn.onclick = () => {
-    document
-
-      .getElementById("map-container")
-
-      .classList.toggle("expanded");
+    document.getElementById("map-container").classList.toggle("expanded");
 
     setTimeout(() => {
       map.invalidateSize();
@@ -218,43 +188,84 @@ function setupMapButtons() {
 }
 
 // =====================================
+// BUSCADOR DE DESTINO
+// =====================================
+
+function setupSearch() {
+  const input = document.getElementById("search-input");
+  const btn = document.getElementById("search-btn");
+  const resultsBox = document.getElementById("search-results");
+
+  if (!input || !btn || !resultsBox) return;
+
+  const runSearch = async () => {
+    const query = input.value.trim();
+
+    if (!query) return;
+
+    resultsBox.classList.add("visible");
+    resultsBox.innerHTML = `<div class="search-result-item search-loading">Buscando...</div>`;
+
+    try {
+      const results = await searchPlace(query);
+
+      if (!results.length) {
+        resultsBox.innerHTML = `<div class="search-result-item">Sin resultados</div>`;
+
+        return;
+      }
+
+      resultsBox.innerHTML = "";
+
+      results.forEach((place) => {
+        const item = document.createElement("div");
+
+        item.className = "search-result-item";
+        item.textContent = place.name;
+
+        item.onclick = () => {
+          setDestination(place.lat, place.lon, { recenter: true });
+
+          resultsBox.classList.remove("visible");
+          resultsBox.innerHTML = "";
+          input.value = place.name;
+          input.blur();
+        };
+
+        resultsBox.appendChild(item);
+      });
+    } catch (error) {
+      console.error("Error de búsqueda:", error);
+
+      resultsBox.innerHTML = `<div class="search-result-item">Error al buscar</div>`;
+    }
+  };
+
+  btn.onclick = runSearch;
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runSearch();
+  });
+}
+
+// =====================================
 // UBICACION
 // =====================================
 
 function updateUserLocation(lat, lon) {
-  currentLocation = {
-    lat,
+  currentLocation = { lat, lon };
 
-    lon,
-  };
+  updateStreet(lat, lon);
 
-  updateStreet(
-    lat,
-
-    lon,
-  );
-
-  checkNearbyPOIs(
-    lat,
-
-    lon,
-  );
+  checkNearbyPOIs(lat, lon);
 
   if (!map) {
-    initMap(
-      lat,
-
-      lon,
-    );
+    initMap(lat, lon);
 
     return;
   }
 
-  updateUserMarker(
-    lat,
-
-    lon,
-  );
+  updateUserMarker(lat, lon);
 
   updateTargetBearing();
 }
@@ -263,15 +274,9 @@ function updateUserMarker(lat, lon) {
   let position = [lat, lon];
 
   if (!userMarker) {
-    userMarker = L.marker(
-      position,
-
-      {
-        icon: userIcon,
-      },
-    )
-
-      .addTo(map);
+    userMarker = L.marker(position, {
+      icon: userIcon,
+    }).addTo(map);
   } else {
     userMarker.setLatLng(position);
   }
@@ -289,9 +294,7 @@ async function calculateRoute() {
   try {
     let route = await calculateRouteByMode(
       currentLocation,
-
       destination,
-
       navigationMode,
     );
 
@@ -309,11 +312,7 @@ async function calculateRoute() {
   } catch (error) {
     if (requestId !== routeRequestId) return;
 
-    console.error(
-      "Routing error",
-
-      error,
-    );
+    console.error("Routing error", error);
 
     document.getElementById("instruction").textContent =
       "No se pudo calcular la ruta";
@@ -329,27 +328,15 @@ function drawRoute(geometry) {
 
   let coords = geometry.coordinates.map((point) => [point[1], point[0]]);
 
-  routeLayer = L.polyline(
-    coords,
+  routeLayer = L.polyline(coords, {
+    color: "#00ffff",
+    weight: 6,
+    opacity: 0.9,
+  }).addTo(map);
 
-    {
-      color: "#00ffff",
-
-      weight: 6,
-
-      opacity: 0.9,
-    },
-  )
-
-    .addTo(map);
-
-  map.fitBounds(
-    routeLayer.getBounds(),
-
-    {
-      padding: [40, 40],
-    },
-  );
+  map.fitBounds(routeLayer.getBounds(), {
+    padding: [40, 40],
+  });
 }
 
 // =====================================
@@ -379,11 +366,7 @@ function generateInstruction(step) {
 
   let distance = formatDistance(step.distance || 0);
 
-  // ORS
-
   if (step.instruction) return step.instruction;
-
-  // OSRM
 
   if (step.maneuver) {
     let modifier = step.maneuver.modifier;
@@ -403,17 +386,12 @@ function generateInstruction(step) {
 // =====================================
 // FLECHA DE NAVEGACION (rumbo relativo)
 // =====================================
-// La flecha apunta hacia el objetivo (siguiente maniobra o destino)
-// RELATIVO a hacia dónde está mirando el usuario ahora mismo. Si el
-// usuario está de espaldas al objetivo, la flecha gira 180°.
 
 function updateTargetBearing() {
   if (!currentLocation) return;
 
   let target = destination;
 
-  // si hay un paso de ruta con ubicación exacta, apuntamos ahí
-  // (guía giro a giro en vez de solo hacia el destino final)
   if (navigationSteps.length && navigationSteps[0].maneuver?.location) {
     const [lon, lat] = navigationSteps[0].maneuver.location;
 
@@ -443,13 +421,11 @@ function renderArrow() {
     return;
   }
 
-  // rotación relativa: rumbo al objetivo menos hacia dónde miro ahora
   const relative = (((targetBearing - currentHeading) % 360) + 360) % 360;
 
   arrowEl.style.transform = `rotate(${relative}deg)`;
 }
 
-// fórmula estándar de rumbo inicial entre dos coordenadas
 function calculateBearing(lat1, lon1, lat2, lon2) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const toDeg = (rad) => (rad * 180) / Math.PI;
@@ -517,7 +493,7 @@ async function updateStreet(lat, lon) {
 }
 
 // =====================================
-// LUGARES CERCANOS (throttle Overpass)
+// LUGARES CERCANOS (Overpass + capa AR)
 // =====================================
 
 async function checkNearbyPOIs(lat, lon) {
@@ -534,7 +510,13 @@ async function checkNearbyPOIs(lat, lon) {
     const tooSoon = now - lastPOILookup < POI_LOOKUP_INTERVAL_MS;
     const tooClose = moved < POI_LOOKUP_MIN_DISTANCE_M;
 
-    if (tooSoon && tooClose) return;
+    if (tooSoon && tooClose) {
+      // no re-consultamos Overpass, pero sí reposicionamos los
+      // marcadores AR ya conocidos (cambió posición/heading)
+      renderARPOIs();
+
+      return;
+    }
   }
 
   lastPOILookup = now;
@@ -544,41 +526,118 @@ async function checkNearbyPOIs(lat, lon) {
     const pois = await fetchNearbyPOIs(lat, lon, POI_NOTIFY_RADIUS_M);
 
     pois.forEach((poi) => {
-      if (notifiedPOIIds.has(poi.id)) return;
-
-      notifiedPOIIds.add(poi.id);
-
-      showPOINotification(poi);
+      if (!activePOIs.has(poi.id)) {
+        activePOIs.set(poi.id, {
+          ...poi,
+          verticalSlot: verticalSlotFor(poi.id),
+          el: null,
+        });
+      }
     });
 
-    // evita que el Set crezca sin límite en viajes muy largos
-    if (notifiedPOIIds.size > 300) notifiedPOIIds.clear();
+    renderARPOIs();
   } catch (error) {
     console.warn("No se pudieron obtener lugares cercanos:", error);
   }
 }
 
-function showPOINotification(poi) {
-  const container = document.getElementById("poi-notifications");
+// posiciona verticalmente cada POI dentro de una franja fija, para
+// que dos POIs con rumbo similar no queden exactamente superpuestos
+function verticalSlotFor(id) {
+  const band = [26, 55]; // % desde arriba del camera-container
 
-  if (!container) return;
+  const pseudo = Math.abs(Math.sin(id) * 10000) % 1;
 
-  const toast = document.createElement("div");
-
-  toast.className = "poi-toast";
-
-  toast.innerHTML = `<span class="poi-icon">${poi.icon}</span><span class="poi-text">${poi.label}: ${escapeHtml(poi.name)}</span>`;
-
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add("poi-toast-out");
-
-    setTimeout(() => toast.remove(), 400);
-  }, 5000);
+  return band[0] + pseudo * (band[1] - band[0]);
 }
 
-// evita inyección de HTML si el nombre del POI trae caracteres raros
+// =====================================
+// CAPA AR SOBRE LA CAMARA
+// =====================================
+
+function renderARPOIs() {
+  if (!currentLocation) return;
+
+  const layer = document.getElementById("ar-poi-layer");
+
+  if (!layer) return;
+
+  activePOIs.forEach((poi) => {
+    const distance = haversineDistance(
+      currentLocation.lat,
+      currentLocation.lon,
+      poi.lat,
+      poi.lon,
+    );
+
+    poi.distance = distance;
+
+    // el usuario se alejó demasiado: dejamos de rastrear este POI
+    if (distance > POI_REMOVE_RADIUS_M) {
+      if (poi.el) poi.el.remove();
+
+      activePOIs.delete(poi.id);
+
+      return;
+    }
+
+    if (!poi.el) {
+      poi.el = createPOIElement(poi);
+
+      layer.appendChild(poi.el);
+    }
+
+    const bearing = calculateBearing(
+      currentLocation.lat,
+      currentLocation.lon,
+      poi.lat,
+      poi.lon,
+    );
+
+    // diferencia angular entre hacia dónde miro y hacia dónde está el POI
+    const relative = ((bearing - currentHeading + 540) % 360) - 180;
+
+    // fuera del campo visual asumido de la cámara: se oculta (no se borra)
+    if (Math.abs(relative) > AR_FOV_HALF_DEG) {
+      poi.el.style.display = "none";
+
+      return;
+    }
+
+    poi.el.style.display = "flex";
+
+    const leftPercent = 50 + (relative / AR_FOV_HALF_DEG) * 50;
+
+    // más cerca = ícono más grande y opaco (simula profundidad)
+    const proximity = 1 - Math.min(distance / POI_NOTIFY_RADIUS_M, 1);
+    const scale = 0.7 + proximity * 0.5;
+    const opacity = 0.55 + proximity * 0.45;
+
+    poi.el.style.left = `${leftPercent}%`;
+    poi.el.style.top = `${poi.verticalSlot}%`;
+    poi.el.style.opacity = opacity;
+    poi.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+
+    const distText = poi.el.querySelector(".ar-poi-distance");
+
+    if (distText) distText.textContent = formatDistance(distance);
+  });
+}
+
+function createPOIElement(poi) {
+  const el = document.createElement("div");
+
+  el.className = "ar-poi-marker";
+
+  el.innerHTML = `
+    <div class="ar-poi-icon">${poi.icon}</div>
+    <div class="ar-poi-name">${escapeHtml(poi.name)}</div>
+    <div class="ar-poi-distance"></div>
+  `;
+
+  return el;
+}
+
 function escapeHtml(text) {
   const div = document.createElement("div");
 

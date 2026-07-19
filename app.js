@@ -178,8 +178,9 @@ function updateCompass(value) {
 
   compass.style.transform = `rotate(${-value}deg)`;
 
-  // recalcula la flecha de navegación cada vez que cambia el heading
   if (typeof renderArrow === "function") renderArrow();
+
+  if (typeof renderARPOIs === "function") renderARPOIs();
 }
 
 // =====================================
