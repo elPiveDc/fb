@@ -21,6 +21,7 @@ const headingLabel = document.getElementById("heading");
 
 let currentHeading = 0;
 let cameraStream = null;
+let compassActive = false;
 
 // =====================================
 // RELOJ
@@ -91,9 +92,12 @@ function startGPS() {
         error,
       );
 
-      // el usuario debe enterarse si el GPS falla, no solo la consola
       if (error.code === error.PERMISSION_DENIED) {
         alert("Se necesita permiso de ubicación para navegar");
+      } else if (error.code === error.POSITION_UNAVAILABLE) {
+        alert("No se pudo determinar tu ubicación. Verifica tu señal GPS");
+      } else if (error.code === error.TIMEOUT) {
+        console.warn("GPS tardó demasiado en responder, reintentando...");
       }
     },
 
@@ -112,7 +116,6 @@ function updateGPSInfo(coords) {
 
   lonLabel.textContent = coords.longitude.toFixed(6);
 
-  // antes: "coords.altitude ? ..." fallaba con altitud real = 0 (nivel del mar)
   altLabel.textContent =
     coords.altitude !== null && coords.altitude !== undefined
       ? coords.altitude.toFixed(1) + " m"
@@ -120,7 +123,6 @@ function updateGPSInfo(coords) {
 
   accLabel.textContent = coords.accuracy.toFixed(1) + " m";
 
-  // antes: "coords.speed ? ..." fallaba con velocidad real = 0 (detenido)
   speedLabel.textContent =
     coords.speed !== null && coords.speed !== undefined
       ? (coords.speed * 3.6).toFixed(1) + " km/h"
@@ -130,26 +132,63 @@ function updateGPSInfo(coords) {
 // =====================================
 // BRUJULA
 // =====================================
+// iOS Safari exige que el permiso de orientación se pida dentro
+// de un gesto directo del usuario (tap/click). Si se llama
+// automáticamente al cargar la página, el navegador lo rechaza
+// sin avisar. Por eso: en iOS mostramos un botón visible y solo
+// pedimos el permiso cuando el usuario lo toca. En Android/otros
+// navegadores que no requieren este permiso, se activa directo.
 
 function startCompass() {
-  // iOS Safari exige permiso explícito para deviceorientation
-  if (typeof DeviceOrientationEvent?.requestPermission === "function") {
-    DeviceOrientationEvent.requestPermission()
-      .then((state) => {
-        if (state === "granted") {
-          attachCompassListener();
-        } else {
-          console.warn("Permiso de brújula denegado");
-        }
-      })
-      .catch((error) => console.error("Error permiso brújula:", error));
-  } else {
-    // Android / navegadores que no requieren permiso explícito
+  const needsPermission =
+    typeof DeviceOrientationEvent?.requestPermission === "function";
+
+  if (!needsPermission) {
     attachCompassListener();
+
+    return;
   }
+
+  const btn = document.getElementById("compass-permission-btn");
+
+  if (!btn) {
+    // si no existe el botón en el HTML, intentamos igual (puede
+    // fallar en iOS por falta de gesto, pero no rompe nada)
+    requestCompassPermission();
+
+    return;
+  }
+
+  btn.style.display = "flex";
+
+  btn.onclick = () => {
+    requestCompassPermission();
+  };
+}
+
+function requestCompassPermission() {
+  DeviceOrientationEvent.requestPermission()
+    .then((state) => {
+      const btn = document.getElementById("compass-permission-btn");
+
+      if (state === "granted") {
+        attachCompassListener();
+
+        if (btn) btn.style.display = "none";
+      } else {
+        console.warn("Permiso de brújula denegado");
+
+        if (btn) btn.textContent = "Brújula no disponible";
+      }
+    })
+    .catch((error) => console.error("Error permiso brújula:", error));
 }
 
 function attachCompassListener() {
+  if (compassActive) return;
+
+  compassActive = true;
+
   window.addEventListener(
     "deviceorientation",
 

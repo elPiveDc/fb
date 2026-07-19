@@ -5,15 +5,15 @@
 
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"
     />
 
-    <!-- Colorea la barra del navegador acorde al HUD oscuro -->
     <meta name="theme-color" content="#000000" />
 
-    <!-- Comportamiento tipo app de pantalla completa en iOS/Android -->
     <meta name="mobile-web-app-capable" content="yes" />
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
+
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
@@ -21,200 +21,153 @@
 
     <title>Navigation HUD</title>
 
-    <!-- Preconexión a servicios externos usados por routing.js y map.js
-         (achica la latencia del primer request real a cada uno) -->
+    <!-- Leaflet -->
+
     <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
+
     <link
       rel="preconnect"
       href="https://routing.openstreetmap.de"
       crossorigin
     />
+
     <link
       rel="preconnect"
       href="https://nominatim.openstreetmap.org"
       crossorigin
     />
 
-    <!-- Leaflet (versión fija para evitar roturas por updates silenciosos) -->
-
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
 
-    <!-- CSS propio -->
-
     <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body>
-    <!-- =================================================
-     CAMARA + HUD
-================================================== -->
+    <!-- =====================================================
+     CAMARA
+====================================================== -->
 
     <div id="camera-container">
       <video id="camera" autoplay playsinline muted></video>
 
+      <!-- =====================================================
+         HUD
+    ====================================================== -->
+
       <div id="overlay">
-        <!-- ==========================
-             INFORMACION GPS
-        =========================== -->
+        <!-- =============================================
+             PANEL INFORMACIÓN
+        ============================================== -->
 
         <div id="info-panel">
-          <div>
-            <strong>Hora:</strong>
+          <div><strong>Hora:</strong> <span id="time">--:--:--</span></div>
 
-            <span id="time"> --:--:-- </span>
-          </div>
+          <div><strong>Lat:</strong> <span id="latitude">---</span></div>
 
-          <div>
-            <strong>Lat:</strong>
+          <div><strong>Lon:</strong> <span id="longitude">---</span></div>
 
-            <span id="latitude"> --- </span>
-          </div>
+          <div><strong>Alt:</strong> <span id="altitude">---</span></div>
 
-          <div>
-            <strong>Lon:</strong>
+          <div><strong>Precisión:</strong> <span id="accuracy">---</span></div>
 
-            <span id="longitude"> --- </span>
-          </div>
+          <div><strong>Velocidad:</strong> <span id="speed">---</span></div>
 
-          <div>
-            <strong>Alt:</strong>
+          <div><strong>Distancia:</strong> <span id="distance">---</span></div>
 
-            <span id="altitude"> --- </span>
-          </div>
-
-          <div>
-            <strong>Precisión:</strong>
-
-            <span id="accuracy"> --- </span>
-          </div>
-
-          <div>
-            <strong>Velocidad:</strong>
-
-            <span id="speed"> --- </span>
-          </div>
-
-          <div>
-            <strong>Distancia:</strong>
-
-            <span id="distance"> --- </span>
-          </div>
-
-          <div>
-            <strong>ETA:</strong>
-
-            <span id="eta"> --- </span>
-          </div>
+          <div><strong>ETA:</strong> <span id="eta">---</span></div>
         </div>
 
-        <!-- ==========================
-             BRUJULA
-        =========================== -->
+        <!-- =============================================
+             BRÚJULA
+        ============================================== -->
 
         <div id="compass-panel">
           <div id="compass">🧭</div>
 
           <div id="heading">0°</div>
+
+          <button id="compass-permission-btn" style="display: none">
+            Activar brújula
+          </button>
         </div>
 
-        <!-- ==========================
-              CAPA AR: LUGARES CERCANOS SOBRE LA CAMARA
-        =========================== -->
-
-        <div id="ar-poi-layer"></div>
-
-        <!-- ==========================
-              BUSCADOR DE DESTINO
-        =========================== -->
+        <!-- =============================================
+             BUSCADOR
+        ============================================== -->
 
         <div id="destination-search">
           <input
-            type="text"
             id="search-input"
+            type="text"
             placeholder="Buscar destino..."
             autocomplete="off"
           />
 
-          <button id="search-btn" aria-label="Buscar destino">🔍</button>
+          <button id="search-btn" aria-label="Buscar">🔍</button>
 
           <div id="search-results"></div>
         </div>
 
-        <!-- ==========================
-             NAVEGACION HUD
-        =========================== -->
+        <!-- =============================================
+             CAPA AR
+        ============================================== -->
+
+        <div id="ar-poi-layer"></div>
+
+        <!-- =============================================
+             NAVEGACIÓN
+        ============================================== -->
 
         <div id="navigation">
           <div id="arrow">↑</div>
 
-          <!-- Calle actual -->
-
           <div id="street">Buscando calle...</div>
 
-          <!-- Modo ruta -->
-
           <div id="route-mode">🚶 Caminando</div>
-
-          <!-- Instruccion -->
 
           <div id="instruction">Seleccione un destino</div>
         </div>
       </div>
     </div>
 
-    <!-- =================================================
+    <!-- =====================================================
      MAPA
-================================================== -->
+====================================================== -->
 
     <div id="map-container">
       <div id="map"></div>
 
-      <!-- Expandir mapa -->
+      <!-- Botones -->
 
-      <button id="map-size-btn" aria-label="Expandir o contraer el mapa">
-        ⛶
-      </button>
+      <button id="map-size-btn" aria-label="Expandir mapa">⛶</button>
 
-      <!-- Cambiar tema -->
+      <button id="map-theme-btn" aria-label="Cambiar tema">🌙</button>
 
-      <button id="map-theme-btn" aria-label="Cambiar tema claro u oscuro">
-        🌙
-      </button>
+      <button id="mode-btn" aria-label="Cambiar modo">🚶</button>
 
-      <!-- Cambiar modo -->
+      <button id="clear-route-btn" aria-label="Eliminar ruta">❌</button>
 
-      <button
-        id="mode-btn"
-        aria-label="Cambiar entre modo caminando y vehículo"
-      >
-        🚶
-      </button>
+      <button id="recenter-btn" aria-label="Volver a mi ubicación">📍</button>
     </div>
 
-    <!-- =================================================
-     LIBRERIAS
-================================================== -->
+    <!-- =====================================================
+     LIBRERÍAS
+====================================================== -->
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- =================================================
-     SISTEMA DE RUTAS
-================================================== -->
+    <!-- Routing -->
 
     <script src="routing.js"></script>
 
-    <!-- =================================================
-     LOGICA MAPA
-================================================== -->
+    <!-- Mapa -->
 
     <script src="map.js"></script>
 
-    <!-- =================================================
-     LOGICA APP
-================================================== -->
+    <!-- Aplicación -->
 
     <script src="app.js"></script>
   </body>

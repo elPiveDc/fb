@@ -132,6 +132,54 @@ function setDestination(lat, lon, options = {}) {
 }
 
 // =====================================
+// BORRAR RUTA MARCADA
+// =====================================
+// Limpia destino, marcador y ruta dibujada. No toca la ubicación
+// actual del usuario ni el buscador.
+
+function clearRoute() {
+  destination = null;
+
+  currentRoute = null;
+
+  navigationSteps = [];
+
+  // invalida cualquier respuesta de ruta que esté en camino
+  routeRequestId++;
+
+  if (destinationMarker) {
+    map.removeLayer(destinationMarker);
+
+    destinationMarker = null;
+  }
+
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+
+    routeLayer = null;
+  }
+
+  document.getElementById("distance").textContent = "---";
+  document.getElementById("eta").textContent = "---";
+  document.getElementById("instruction").textContent = "Seleccione un destino";
+
+  renderArrow();
+}
+
+// =====================================
+// VOLVER A MI POSICION ACTUAL
+// =====================================
+// Solo mueve la cámara del mapa hacia el usuario. No borra el
+// destino ni la ruta ya calculada — el usuario puede seguir
+// navegando normalmente después de recentrar.
+
+function recenterToUser() {
+  if (!map || !currentLocation) return;
+
+  map.setView([currentLocation.lat, currentLocation.lon], 17);
+}
+
+// =====================================
 // BOTONES
 // =====================================
 
@@ -185,6 +233,18 @@ function setupMapButtons() {
       if (destination) calculateRoute();
     };
   }
+
+  const clearBtn = document.getElementById("clear-route-btn");
+
+  if (clearBtn) {
+    clearBtn.onclick = () => clearRoute();
+  }
+
+  const recenterBtn = document.getElementById("recenter-btn");
+
+  if (recenterBtn) {
+    recenterBtn.onclick = () => recenterToUser();
+  }
 }
 
 // =====================================
@@ -195,8 +255,15 @@ function setupSearch() {
   const input = document.getElementById("search-input");
   const btn = document.getElementById("search-btn");
   const resultsBox = document.getElementById("search-results");
+  const searchContainer = document.getElementById("destination-search");
 
   if (!input || !btn || !resultsBox) return;
+
+  const hideResults = () => {
+    resultsBox.classList.remove("visible");
+
+    resultsBox.innerHTML = "";
+  };
 
   const runSearch = async () => {
     const query = input.value.trim();
@@ -229,8 +296,8 @@ function setupSearch() {
         item.onclick = () => {
           setDestination(place.lat, place.lon, { recenter: true });
 
-          resultsBox.classList.remove("visible");
-          resultsBox.innerHTML = "";
+          hideResults();
+
           input.value = place.name;
           input.blur();
         };
@@ -248,6 +315,26 @@ function setupSearch() {
 
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") runSearch();
+  });
+
+  // cierra la lista si el usuario toca fuera del buscador
+  document.addEventListener("touchstart", (e) => {
+    if (searchContainer && !searchContainer.contains(e.target)) {
+      hideResults();
+    }
+  });
+
+  document.addEventListener("mousedown", (e) => {
+    if (searchContainer && !searchContainer.contains(e.target)) {
+      hideResults();
+    }
+  });
+
+  // fallback: si el input pierde foco por otro motivo (ej. teclado
+  // virtual que se cierra), un pequeño delay evita que el blur
+  // gane la carrera contra el click de un resultado
+  input.addEventListener("blur", () => {
+    setTimeout(hideResults, 150);
   });
 }
 
@@ -401,7 +488,11 @@ function updateTargetBearing() {
     target = { lat, lon };
   }
 
-  if (!target) return;
+  if (!target) {
+    renderArrow();
+
+    return;
+  }
 
   targetBearing = calculateBearing(
     currentLocation.lat,

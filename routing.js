@@ -172,18 +172,18 @@ function classifyPOI(tags) {
 // =====================================
 // Permite marcar un destino automáticamente por nombre/dirección,
 // en vez de tocar el mapa manualmente. Gratis, sin API key.
-// Solo se llama cuando el usuario busca algo (no en loop), así que
-// no compite con el límite de uso de Nominatim que ya cuidamos
-// en updateStreet().
-
-const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
-
-// =====================================
-// BUSQUEDA DE LUGARES (Geocoding) - Nominatim
-// =====================================
-// Prioriza resultados cercanos a "near" (tu ubicación actual):
-// 1) se sesga la consulta con un viewbox alrededor tuyo
-// 2) el orden final se recalcula en el cliente por distancia real
+//
+// Prioriza resultados cercanos a "near" (tu ubicación actual) en
+// dos pasos:
+//   1) se sesga la consulta con un viewbox alrededor tuyo
+//      (bounded=0 = preferencia, no exclusión dura)
+//   2) el orden final se recalcula en el cliente por distancia
+//      real (haversineDistance, definida en map.js — para cuando
+//      esta función se llama, todos los scripts ya cargaron)
+//
+// No compite con el límite de uso de Nominatim que ya cuidamos en
+// updateStreet(), porque solo se dispara cuando el usuario busca
+// algo manualmente, nunca en loop automático.
 
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
 
@@ -191,8 +191,7 @@ async function searchPlace(query, near = null) {
   let url = `${NOMINATIM_SEARCH_URL}?q=${encodeURIComponent(query)}&format=json&limit=10&addressdetails=1`;
 
   if (near) {
-    // caja de ~0.15° (~15-16km) alrededor de la ubicación actual.
-    // bounded=0 = sesgo (prioriza sin descartar resultados fuera)
+    // caja de ~0.15° (~15-16km) alrededor de la ubicación actual
     const delta = 0.15;
 
     const viewbox = [

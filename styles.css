@@ -1,44 +1,92 @@
-/* =====================================
+/* ===========================================================
+   VARIABLES
+=========================================================== */
+
+:root {
+  --primary: #00e5ff;
+
+  --primary-dark: #00b7c7;
+
+  --background: rgba(0, 0, 0, 0.65);
+
+  --background-light: rgba(0, 0, 0, 0.45);
+
+  --glass-blur: 8px;
+
+  --radius: 12px;
+
+  --shadow: 0 0 12px rgba(0, 0, 0, 0.55);
+
+  --transition: 0.25s ease;
+
+  --button-size: 48px;
+
+  --text: #fff;
+}
+
+/* ===========================================================
    RESET
-===================================== */
+=========================================================== */
 
 * {
   margin: 0;
+
   padding: 0;
+
   box-sizing: border-box;
-  /* evita el flash gris al tocar botones/elementos en mobile */
+
   -webkit-tap-highlight-color: transparent;
 }
 
 html,
 body {
   width: 100%;
+
   height: 100%;
+
   overflow: hidden;
-  /* evita pull-to-refresh y rebote visual al hacer swipe sobre la cámara */
-  overscroll-behavior: none;
+
   background: #000;
-  color: white;
+
+  color: var(--text);
+
+  overscroll-behavior: none;
+
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
 
-  /* evita selección accidental de texto del HUD en long-press mobile */
   -webkit-user-select: none;
+
   user-select: none;
 }
 
-/* respeta accesibilidad: sin animaciones si el usuario las desactivó */
 @media (prefers-reduced-motion: reduce) {
   * {
-    transition: none !important;
-
     animation: none !important;
+
+    transition: none !important;
   }
 }
 
-/* =====================================
+/* ===========================================================
+   TARJETAS HUD
+=========================================================== */
+
+.hud-card {
+  background: var(--background);
+
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  border-radius: var(--radius);
+
+  box-shadow: var(--shadow);
+}
+
+/* ===========================================================
    CAMARA
-===================================== */
+=========================================================== */
 
 #camera-container {
   position: relative;
@@ -49,7 +97,7 @@ body {
 
   overflow: hidden;
 
-  background: black;
+  background: #000;
 }
 
 @supports not (height: 70dvh) {
@@ -64,11 +112,13 @@ body {
   height: 100%;
 
   object-fit: cover;
+
+  transform: translateZ(0);
 }
 
-/* =====================================
-   HUD OVERLAY
-===================================== */
+/* ===========================================================
+   OVERLAY
+=========================================================== */
 
 #overlay {
   position: absolute;
@@ -76,35 +126,38 @@ body {
   inset: 0;
 
   pointer-events: none;
+
+  z-index: 100;
 }
 
-/* =====================================
+/* ===========================================================
    PANEL INFORMACION
-===================================== */
+=========================================================== */
 
 #info-panel {
   position: absolute;
 
-  /* respeta el notch/isla dinámica sumando el safe-area al offset original */
-  top: calc(12px + env(safe-area-inset-top, 0px));
+  top: calc(12px + env(safe-area-inset-top));
 
-  left: calc(12px + env(safe-area-inset-left, 0px));
-
-  padding: 10px 14px;
+  left: calc(12px + env(safe-area-inset-left));
 
   max-width: 55vw;
 
-  background: rgba(0, 0, 0, 0.55);
+  padding: 12px 15px;
 
-  border-radius: 12px;
+  background: var(--background);
 
-  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius);
 
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--glass-blur));
+
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  line-height: 1.55;
 
   font-size: clamp(11px, 3vw, 15px);
 
-  line-height: 1.55;
+  z-index: 150;
 }
 
 #info-panel div {
@@ -112,27 +165,29 @@ body {
 }
 
 #info-panel strong {
-  color: #ddd;
+  color: #d5d5d5;
 }
 
-/* =====================================
+/* ===========================================================
    BRUJULA
-===================================== */
+=========================================================== */
 
 #compass-panel {
   position: absolute;
 
-  top: calc(12px + env(safe-area-inset-top, 0px));
+  top: calc(12px + env(safe-area-inset-top));
 
-  right: calc(12px + env(safe-area-inset-right, 0px));
+  right: calc(12px + env(safe-area-inset-right));
 
   text-align: center;
+
+  z-index: 160;
 }
 
 #compass {
-  width: clamp(65px, 18vw, 100px);
+  width: clamp(68px, 18vw, 100px);
 
-  height: clamp(65px, 18vw, 100px);
+  height: clamp(68px, 18vw, 100px);
 
   display: flex;
 
@@ -140,99 +195,131 @@ body {
 
   align-items: center;
 
-  font-size: clamp(40px, 12vw, 65px);
-
-  background: rgba(0, 0, 0, 0.5);
-
   border-radius: 50%;
 
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--background);
 
   backdrop-filter: blur(6px);
 
+  -webkit-backdrop-filter: blur(6px);
+
+  font-size: clamp(42px, 12vw, 66px);
+
   transition: transform 0.15s linear;
+
+  will-change: transform;
 }
 
 #heading {
-  margin-top: 5px;
+  margin-top: 6px;
 
-  padding: 4px 10px;
+  padding: 5px 12px;
 
-  background: rgba(0, 0, 0, 0.55);
+  border-radius: 10px;
 
-  border-radius: 8px;
+  background: var(--background);
 
   font-size: clamp(14px, 4vw, 20px);
 }
 
-/* =====================================
+#compass-permission-btn {
+  margin-top: 8px;
+
+  padding: 8px 14px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: var(--primary);
+
+  color: #000;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  pointer-events: auto;
+
+  box-shadow: var(--shadow);
+}
+
+/* ===========================================================
    NAVEGACION
-===================================== */
+=========================================================== */
 
 #navigation {
   position: absolute;
 
-  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom));
 
-  /* respeta la barra de gestos inferior en iOS/Android */
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
 
   transform: translateX(-50%);
 
-  width: 90%;
+  width: 92%;
 
   text-align: center;
+
+  z-index: 170;
 }
 
 #arrow {
-  font-size: clamp(55px, 16vw, 95px);
-
-  font-weight: bold;
+  font-size: clamp(60px, 16vw, 95px);
 
   line-height: 1;
 
-  text-shadow: 0 0 15px black;
+  font-weight: bold;
+
+  text-shadow: 0 0 18px #000;
+
+  transition: transform 0.2s ease;
+
+  will-change: transform;
 }
 
 #street {
   display: inline-block;
 
-  margin-top: 5px;
+  margin-top: 6px;
 
-  padding: 5px 14px;
-
-  background: rgba(0, 0, 0, 0.55);
+  padding: 6px 14px;
 
   border-radius: 10px;
 
-  font-size: clamp(13px, 4vw, 18px);
+  background: var(--background);
+}
+
+#route-mode {
+  margin-top: 8px;
+
+  font-size: 15px;
+
+  color: var(--primary);
 }
 
 #instruction {
   display: inline-block;
 
-  margin-top: 8px;
-
-  padding: 8px 16px;
+  margin-top: 10px;
 
   max-width: 95%;
 
-  background: rgba(0, 0, 0, 0.65);
+  padding: 10px 16px;
 
   border-radius: 12px;
 
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--background);
 
   backdrop-filter: blur(8px);
 
-  font-size: clamp(14px, 4vw, 22px);
-
   font-weight: bold;
-}
 
-/* =====================================
-   CONTENEDOR MAPA
-===================================== */
+  font-size: clamp(15px, 4vw, 22px);
+}
+/* ===========================================================
+   MAPA
+=========================================================== */
 
 #map-container {
   position: relative;
@@ -243,7 +330,11 @@ body {
 
   min-height: 180px;
 
+  background: #111;
+
   transition: height 0.35s ease;
+
+  z-index: 10;
 }
 
 @supports not (height: 30dvh) {
@@ -264,33 +355,30 @@ body {
   border-top: 2px solid #222;
 }
 
-/* =====================================
-   BOTONES MAPA
-===================================== */
+/* ===========================================================
+   BOTONES DEL MAPA
+=========================================================== */
 
 #map-size-btn,
 #map-theme-btn,
-#mode-btn {
+#mode-btn,
+#clear-route-btn,
+#recenter-btn {
   position: absolute;
 
-  /* respeta la barra de gestos/borde lateral en pantallas con notch */
-  right: calc(15px + env(safe-area-inset-right, 0px));
+  right: calc(15px + env(safe-area-inset-right));
 
-  z-index: 9999;
+  width: var(--button-size);
 
-  width: 48px;
-
-  height: 48px;
+  height: var(--button-size);
 
   border: none;
 
   border-radius: 50%;
 
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.78);
 
-  color: white;
-
-  font-size: 22px;
+  color: #fff;
 
   display: flex;
 
@@ -298,181 +386,81 @@ body {
 
   align-items: center;
 
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-
-  /* respuesta táctil inmediata, sin delay de 300ms ni doble-tap-zoom */
-  touch-action: manipulation;
+  font-size: 22px;
 
   cursor: pointer;
+
+  touch-action: manipulation;
+
+  box-shadow: var(--shadow);
+
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease;
+
+  z-index: 999;
 }
 
-#map-size-btn {
-  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+#map-size-btn:hover,
+#map-theme-btn:hover,
+#mode-btn:hover,
+#clear-route-btn:hover,
+#recenter-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+#map-size-btn:active,
+#map-theme-btn:active,
+#mode-btn:active,
+#clear-route-btn:active,
+#recenter-btn:active {
+  transform: scale(0.94);
 }
 
 #map-theme-btn {
-  bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(15px + env(safe-area-inset-bottom));
+}
+
+#map-size-btn {
+  bottom: calc(70px + env(safe-area-inset-bottom));
 }
 
 #mode-btn {
-  bottom: calc(125px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(125px + env(safe-area-inset-bottom));
 }
 
-/* =====================================
+#clear-route-btn {
+  bottom: calc(180px + env(safe-area-inset-bottom));
+}
+
+#recenter-btn {
+  bottom: calc(235px + env(safe-area-inset-bottom));
+}
+
+/* ===========================================================
    LEAFLET
-===================================== */
+=========================================================== */
 
 .leaflet-control-zoom {
   transform: scale(1.15);
+
   transform-origin: top left;
 }
 
 .leaflet-control-attribution {
   font-size: 9px;
+
+  opacity: 0.75;
 }
 
-/* =====================================
-   MOVILES PEQUEÑOS
-===================================== */
-
-@media (max-width: 400px) {
-  #info-panel {
-    font-size: 11px;
-    padding: 8px;
-  }
-
-  #instruction {
-    font-size: 14px;
-  }
-}
-
-/* pantallas muy angostas (iPhone SE, Android gama baja) */
-@media (max-width: 340px) {
-  #compass {
-    width: 58px;
-
-    height: 58px;
-
-    font-size: 34px;
-  }
-
-  #map-size-btn,
-  #map-theme-btn,
-  #mode-btn {
-    width: 42px;
-
-    height: 42px;
-
-    font-size: 18px;
-  }
-}
-
-/* =====================================
-   LANDSCAPE
-===================================== */
-
-@media (orientation: landscape) {
-  #camera-container {
-    height: 68dvh;
-  }
-
-  #map-container {
-    height: 32dvh;
-
-    /* en landscape con poca altura física, 180px puede ser
-           demasiado — se reduce para no aplastar la cámara */
-    min-height: 140px;
-  }
-}
-
-/* =====================================
-   FLECHA - transición suave de rotación
-===================================== */
-
-#arrow {
-  transition: transform 0.2s ease;
-}
-
-/* =====================================
-   CAPA AR: LUGARES CERCANOS
-===================================== */
-
-#ar-poi-layer {
-  position: absolute;
-
-  inset: 0;
-
-  pointer-events: none;
-
-  overflow: hidden;
-}
-
-.ar-poi-marker {
-  position: absolute;
-
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  gap: 2px;
-
-  transition:
-    left 0.25s ease,
-    top 0.25s ease,
-    opacity 0.25s ease,
-    transform 0.25s ease;
-
-  text-align: center;
-}
-
-.ar-poi-icon {
-  font-size: clamp(24px, 7vw, 34px);
-
-  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.8));
-}
-
-.ar-poi-name {
-  max-width: 120px;
-
-  padding: 2px 8px;
-
-  background: rgba(0, 0, 0, 0.6);
-
-  border-radius: 6px;
-
-  font-size: clamp(10px, 2.8vw, 12px);
-
-  white-space: nowrap;
-
-  overflow: hidden;
-
-  text-overflow: ellipsis;
-}
-
-.ar-poi-distance {
-  padding: 1px 8px;
-
-  background: rgba(0, 229, 255, 0.85);
-
-  color: #000;
-
-  border-radius: 10px;
-
-  font-size: clamp(10px, 2.8vw, 12px);
-
-  font-weight: bold;
-}
-
-/* =====================================
-   BUSCADOR DE DESTINO
-===================================== */
+/* ===========================================================
+   BUSCADOR
+=========================================================== */
 
 #destination-search {
   position: absolute;
 
-  top: calc(100px + env(safe-area-inset-top, 0px));
+  top: calc(105px + env(safe-area-inset-top));
 
   left: 50%;
 
@@ -482,33 +470,33 @@ body {
 
   display: flex;
 
-  gap: 6px;
+  gap: 8px;
 
   pointer-events: auto;
 
-  z-index: 600;
+  z-index: 500;
 }
 
 #search-input {
   flex: 1;
 
-  padding: 9px 12px;
+  padding: 10px 14px;
 
   border: none;
 
-  border-radius: 10px;
+  border-radius: 12px;
 
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--background);
 
-  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+
+  font-size: 15px;
+
+  outline: none;
 
   backdrop-filter: blur(8px);
 
-  color: white;
-
-  font-size: clamp(13px, 3.5vw, 15px);
-
-  outline: none;
+  -webkit-backdrop-filter: blur(8px);
 }
 
 #search-input::placeholder {
@@ -516,49 +504,57 @@ body {
 }
 
 #search-btn {
-  width: 40px;
+  width: 42px;
 
-  height: 40px;
-
-  flex-shrink: 0;
+  height: 42px;
 
   border: none;
 
-  border-radius: 10px;
+  border-radius: 12px;
 
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--background);
 
   color: white;
 
-  font-size: 16px;
-
   cursor: pointer;
 
+  backdrop-filter: blur(8px);
+
+  -webkit-backdrop-filter: blur(8px);
+
   touch-action: manipulation;
+
+  transition: background 0.2s ease;
+}
+
+#search-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 
 #search-results {
   position: absolute;
 
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
 
   left: 0;
 
   width: 100%;
 
-  max-height: 200px;
+  max-height: 220px;
 
   overflow-y: auto;
 
-  background: rgba(0, 0, 0, 0.85);
-
-  -webkit-backdrop-filter: blur(10px);
-
-  backdrop-filter: blur(10px);
-
-  border-radius: 10px;
-
   display: none;
+
+  border-radius: 12px;
+
+  background: rgba(0, 0, 0, 0.88);
+
+  backdrop-filter: blur(12px);
+
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow: var(--shadow);
 }
 
 #search-results.visible {
@@ -573,6 +569,22 @@ body {
   align-items: center;
 
   gap: 10px;
+
+  padding: 12px 14px;
+
+  cursor: pointer;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: background 0.15s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
 }
 
 .search-result-distance {
@@ -580,23 +592,149 @@ body {
 
   padding: 2px 8px;
 
-  background: rgba(0, 229, 255, 0.2);
+  border-radius: 10px;
 
-  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
 
-  border-radius: 8px;
+  color: var(--primary);
 
   font-size: 11px;
 
   font-weight: bold;
 }
 
-.search-result-item:last-child {
-  border-bottom: none;
+.search-loading {
+  cursor: default;
+
+  opacity: 0.65;
 }
 
-.search-loading {
-  opacity: 0.6;
+/* ===========================================================
+   CAPA AR
+=========================================================== */
 
-  cursor: default;
+#ar-poi-layer {
+  position: absolute;
+
+  inset: 0;
+
+  overflow: hidden;
+
+  pointer-events: none;
+
+  z-index: 250;
+}
+
+.ar-poi-marker {
+  position: absolute;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 3px;
+
+  will-change: transform, opacity;
+
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.ar-poi-icon {
+  font-size: clamp(26px, 7vw, 36px);
+
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.85));
+}
+
+.ar-poi-name {
+  max-width: 130px;
+
+  padding: 3px 8px;
+
+  background: rgba(0, 0, 0, 0.7);
+
+  border-radius: 8px;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  font-size: 11px;
+}
+
+.ar-poi-distance {
+  padding: 2px 8px;
+
+  background: var(--primary);
+
+  color: #000;
+
+  border-radius: 10px;
+
+  font-size: 11px;
+
+  font-weight: bold;
+}
+
+/* ===========================================================
+   RESPONSIVE
+=========================================================== */
+
+@media (max-width: 400px) {
+  #info-panel {
+    font-size: 11px;
+
+    padding: 8px;
+  }
+
+  #instruction {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 340px) {
+  #compass {
+    width: 58px;
+
+    height: 58px;
+
+    font-size: 34px;
+  }
+
+  #map-size-btn,
+  #map-theme-btn,
+  #mode-btn,
+  #clear-route-btn,
+  #recenter-btn {
+    width: 42px;
+
+    height: 42px;
+
+    font-size: 18px;
+  }
+}
+
+/* ===========================================================
+   LANDSCAPE
+=========================================================== */
+
+@media (orientation: landscape) {
+  #camera-container {
+    height: 68dvh;
+  }
+
+  #map-container {
+    height: 32dvh;
+
+    min-height: 140px;
+  }
+
+  #destination-search {
+    top: 20px;
+  }
 }
