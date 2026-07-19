@@ -207,7 +207,7 @@ function setupSearch() {
     resultsBox.innerHTML = `<div class="search-result-item search-loading">Buscando...</div>`;
 
     try {
-      const results = await searchPlace(query);
+      const results = await searchPlace(query, currentLocation);
 
       if (!results.length) {
         resultsBox.innerHTML = `<div class="search-result-item">Sin resultados</div>`;
@@ -221,7 +221,10 @@ function setupSearch() {
         const item = document.createElement("div");
 
         item.className = "search-result-item";
-        item.textContent = place.name;
+
+        item.innerHTML = place.distance
+          ? `<span>${escapeHtml(place.name)}</span><span class="search-result-distance">${formatDistance(place.distance)}</span>`
+          : `<span>${escapeHtml(place.name)}</span>`;
 
         item.onclick = () => {
           setDestination(place.lat, place.lon, { recenter: true });

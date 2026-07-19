@@ -178,8 +178,32 @@ function classifyPOI(tags) {
 
 const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
 
-async function searchPlace(query) {
-  const url = `${NOMINATIM_SEARCH_URL}?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+// =====================================
+// BUSQUEDA DE LUGARES (Geocoding) - Nominatim
+// =====================================
+// Prioriza resultados cercanos a "near" (tu ubicación actual):
+// 1) se sesga la consulta con un viewbox alrededor tuyo
+// 2) el orden final se recalcula en el cliente por distancia real
+
+const NOMINATIM_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
+
+async function searchPlace(query, near = null) {
+  let url = `${NOMINATIM_SEARCH_URL}?q=${encodeURIComponent(query)}&format=json&limit=10&addressdetails=1`;
+
+  if (near) {
+    // caja de ~0.15° (~15-16km) alrededor de la ubicación actual.
+    // bounded=0 = sesgo (prioriza sin descartar resultados fuera)
+    const delta = 0.15;
+
+    const viewbox = [
+      near.lon - delta,
+      near.lat + delta,
+      near.lon + delta,
+      near.lat - delta,
+    ].join(",");
+
+    url += `&viewbox=${viewbox}&bounded=0`;
+  }
 
   const response = await fetch(url, {
     headers: {
@@ -193,10 +217,22 @@ async function searchPlace(query) {
 
   const data = await response.json();
 
-  return data.map((item) => ({
+  const results = data.map((item) => ({
     id: item.place_id,
     name: item.display_name,
     lat: parseFloat(item.lat),
     lon: parseFloat(item.lon),
   }));
+
+  // orden final garantizado por distancia real, no solo por el
+  // sesgo aproximado que aplicó el servidor
+  if (near) {
+    results.forEach((r) => {
+      r.distance = haversineDistance(near.lat, near.lon, r.lat, r.lon);
+    });
+
+    results.sort((a, b) => a.distance - b.distance);
+  }
+
+  return results.slice(0, 5);
 }

@@ -566,13 +566,29 @@ body {
 }
 
 .search-result-item {
-  padding: 10px 14px;
+  display: flex;
 
-  font-size: clamp(12px, 3.3vw, 14px);
+  justify-content: space-between;
 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  align-items: center;
 
-  cursor: pointer;
+  gap: 10px;
+}
+
+.search-result-distance {
+  flex-shrink: 0;
+
+  padding: 2px 8px;
+
+  background: rgba(0, 229, 255, 0.2);
+
+  color: #00e5ff;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+
+  font-weight: bold;
 }
 
 .search-result-item:last-child {
