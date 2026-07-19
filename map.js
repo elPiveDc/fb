@@ -16,13 +16,17 @@ let destination = null;
 
 let currentRoute = null;
 
+let navigationSteps = [];
+
 let darkMode = true;
 
-let darkLayer = null;
+let darkLayer;
 
-let lightLayer = null;
+let lightLayer;
 
-let lastRouteUpdate = 0;
+// modo navegación
+
+let navigationMode = "walking";
 
 // =====================================
 // ICONOS
@@ -33,14 +37,14 @@ const userIcon = L.divIcon({
 
   html: `
 
-        <div style="
-            width:22px;
-            height:22px;
-            background:#00e5ff;
-            border:4px solid white;
-            border-radius:50%;
-            box-shadow:0 0 15px #00e5ff;">
-        </div>
+    <div style="
+    width:22px;
+    height:22px;
+    background:#00e5ff;
+    border:4px solid white;
+    border-radius:50%;
+    box-shadow:0 0 15px #00e5ff;">
+    </div>
 
     `,
 
@@ -52,37 +56,26 @@ const userIcon = L.divIcon({
 const destinationIcon = L.divIcon({
   className: "",
 
-  html: `
-
-        <div style="
-            font-size:32px;">
-            ⭐
-        </div>
-
-    `,
+  html: "📍",
 
   iconSize: [32, 32],
 
-  iconAnchor: [16, 16],
+  iconAnchor: [16, 32],
 });
 
 // =====================================
-// INICIALIZAR MAPA
+// CREAR MAPA
 // =====================================
 
 function initMap(lat, lon) {
   map = L.map("map", {
     zoomControl: false,
-
-    attributionControl: true,
   });
 
   darkLayer = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
 
     {
-      maxZoom: 20,
-
       attribution: "&copy; OpenStreetMap &copy; CARTO",
     },
   );
@@ -91,8 +84,6 @@ function initMap(lat, lon) {
     "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
 
     {
-      maxZoom: 20,
-
       attribution: "&copy; OpenStreetMap &copy; CARTO",
     },
   );
@@ -118,20 +109,22 @@ function initMap(lat, lon) {
   map.on(
     "click",
 
-    function (e) {
-      destination = e.latlng;
+    (e) => {
+      destination = {
+        lat: e.latlng.lat,
+
+        lon: e.latlng.lng,
+      };
 
       if (destinationMarker) {
         map.removeLayer(destinationMarker);
       }
 
       destinationMarker = L.marker(
-        destination,
+        [destination.lat, destination.lon],
 
         {
           icon: destinationIcon,
-
-          title: "Destino",
         },
       )
 
@@ -145,41 +138,63 @@ function initMap(lat, lon) {
 }
 
 // =====================================
-// BOTONES MAPA
+// BOTONES
 // =====================================
 
 function setupMapButtons() {
-  const sizeButton = document.getElementById("map-size-btn");
+  const sizeBtn = document.getElementById("map-size-btn");
 
-  const themeButton = document.getElementById("map-theme-btn");
+  sizeBtn.onclick = () => {
+    document
 
-  sizeButton.onclick = function () {
-    const container = document.getElementById("map-container");
+      .getElementById("map-container")
 
-    container.classList.toggle("expanded");
+      .classList.toggle("expanded");
 
     setTimeout(() => {
       map.invalidateSize();
-    }, 350);
+    }, 400);
   };
 
-  themeButton.onclick = function () {
+  const themeBtn = document.getElementById("map-theme-btn");
+
+  themeBtn.onclick = () => {
     if (darkMode) {
       map.removeLayer(darkLayer);
 
       lightLayer.addTo(map);
 
-      themeButton.textContent = "☀️";
+      themeBtn.textContent = "☀️";
     } else {
       map.removeLayer(lightLayer);
 
       darkLayer.addTo(map);
 
-      themeButton.textContent = "🌙";
+      themeBtn.textContent = "🌙";
     }
 
     darkMode = !darkMode;
   };
+
+  const modeBtn = document.getElementById("mode-btn");
+
+  if (modeBtn) {
+    modeBtn.onclick = () => {
+      if (navigationMode === "walking") {
+        navigationMode = "driving";
+
+        modeBtn.textContent = "🚗";
+      } else {
+        navigationMode = "walking";
+
+        modeBtn.textContent = "🚶";
+      }
+
+      updateRouteModeLabel();
+
+      if (destination) calculateRoute();
+    };
+  }
 }
 
 // =====================================
@@ -214,18 +229,10 @@ function updateUserLocation(lat, lon) {
 
     lon,
   );
-
-  const now = Date.now();
-
-  if (destination && now - lastRouteUpdate > 10000) {
-    calculateRoute();
-
-    lastRouteUpdate = now;
-  }
 }
 
 function updateUserMarker(lat, lon) {
-  const position = [lat, lon];
+  let position = [lat, lon];
 
   if (!userMarker) {
     userMarker = L.marker(
@@ -233,8 +240,6 @@ function updateUserMarker(lat, lon) {
 
       {
         icon: userIcon,
-
-        title: "Tu ubicación",
       },
     )
 
@@ -245,36 +250,37 @@ function updateUserMarker(lat, lon) {
 }
 
 // =====================================
-// OSRM
+// MOTOR DE RUTAS
 // =====================================
 
 async function calculateRoute() {
   if (!currentLocation || !destination) return;
 
-  const start = `${currentLocation.lon},${currentLocation.lat}`;
-
-  const end = `${destination.lng},${destination.lat}`;
-
-  const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&steps=true&geometries=geojson`;
-
   try {
-    const response = await fetch(url);
+    let route = await calculateRouteByMode(
+      currentLocation,
 
-    const data = await response.json();
+      destination,
 
-    if (!data.routes.length) return;
+      navigationMode,
+    );
 
-    currentRoute = data.routes[0];
+    currentRoute = route;
 
-    drawRoute(currentRoute.geometry);
+    navigationSteps = route.steps || [];
 
-    updateNavigationInfo();
+    drawRoute(route.geometry);
+
+    updateNavigationInfo(route);
   } catch (error) {
     console.error(
-      "OSRM",
+      "Routing error",
 
       error,
     );
+
+    document.getElementById("instruction").textContent =
+      "No se pudo calcular la ruta";
   }
 }
 
@@ -283,11 +289,9 @@ async function calculateRoute() {
 // =====================================
 
 function drawRoute(geometry) {
-  if (routeLayer) {
-    map.removeLayer(routeLayer);
-  }
+  if (routeLayer) map.removeLayer(routeLayer);
 
-  const coords = geometry.coordinates.map((point) => [point[1], point[0]]);
+  let coords = geometry.coordinates.map((point) => [point[1], point[0]]);
 
   routeLayer = L.polyline(
     coords,
@@ -302,27 +306,75 @@ function drawRoute(geometry) {
   )
 
     .addTo(map);
+
+  map.fitBounds(
+    routeLayer.getBounds(),
+
+    {
+      padding: [40, 40],
+    },
+  );
 }
 
 // =====================================
-// DATOS NAVEGACION
+// INSTRUCCIONES
 // =====================================
 
-function updateNavigationInfo() {
-  if (!currentRoute) return;
-
+function updateNavigationInfo(route) {
   document.getElementById("distance").textContent = formatDistance(
-    currentRoute.distance,
+    route.distance,
   );
 
   document.getElementById("eta").textContent =
-    Math.ceil(currentRoute.duration / 60) + " min";
+    Math.ceil(route.duration / 60) + " min";
+
+  if (navigationSteps.length) {
+    let step = navigationSteps[0];
+
+    document.getElementById("instruction").textContent =
+      generateInstruction(step);
+  }
 }
 
-function formatDistance(meters) {
-  if (meters >= 1000) return (meters / 1000).toFixed(1) + " km";
+function generateInstruction(step) {
+  if (!step) return "Continúe";
 
-  return Math.round(meters) + " m";
+  let name = step.name || "la ruta";
+
+  let distance = formatDistance(step.distance || 0);
+
+  // ORS
+
+  if (step.instruction) return step.instruction;
+
+  // OSRM
+
+  if (step.maneuver) {
+    let modifier = step.maneuver.modifier;
+
+    if (modifier?.includes("left"))
+      return `Camina ${distance} y gira a la izquierda por ${name}`;
+
+    if (modifier?.includes("right"))
+      return `Camina ${distance} y gira a la derecha por ${name}`;
+
+    if (step.maneuver.type === "depart") return `Comienza por ${name}`;
+  }
+
+  return `Continúa por ${name} ${distance}`;
+}
+
+// =====================================
+// MODO
+// =====================================
+
+function updateRouteModeLabel() {
+  const label = document.getElementById("route-mode");
+
+  if (!label) return;
+
+  label.textContent =
+    navigationMode === "walking" ? "🚶 Caminando" : "🚗 Vehículo";
 }
 
 // =====================================
@@ -331,21 +383,19 @@ function formatDistance(meters) {
 
 async function updateStreet(lat, lon) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-
-    const response = await fetch(url);
-
-    const data = await response.json();
-
-    const street =
-      data.address.road || data.address.pedestrian || "Zona desconocida";
-
-    document.getElementById("street").textContent = street;
-  } catch (error) {
-    console.error(
-      "Street error",
-
-      error,
+    let response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
     );
-  }
+
+    let data = await response.json();
+
+    document.getElementById("street").textContent =
+      data.address.road || "Zona desconocida";
+  } catch (e) {}
+}
+
+function formatDistance(m) {
+  if (m >= 1000) return (m / 1000).toFixed(1) + " km";
+
+  return Math.round(m) + " m";
 }

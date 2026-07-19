@@ -96,7 +96,15 @@
         <div id="navigation">
           <div id="arrow">↑</div>
 
+          <!-- Calle actual -->
+
           <div id="street">Buscando calle...</div>
+
+          <!-- Modo ruta -->
+
+          <div id="route-mode">🚶 Caminando</div>
+
+          <!-- Instruccion -->
 
           <div id="instruction">Seleccione un destino</div>
         </div>
@@ -117,6 +125,10 @@
       <!-- Cambiar tema -->
 
       <button id="map-theme-btn">🌙</button>
+
+      <!-- Cambiar modo -->
+
+      <button id="mode-btn">🚶</button>
     </div>
 
     <!-- =================================================
@@ -126,10 +138,20 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <!-- =================================================
-     LOGICA
+     SISTEMA DE RUTAS
+================================================== -->
+
+    <script src="routing.js"></script>
+
+    <!-- =================================================
+     LOGICA MAPA
 ================================================== -->
 
     <script src="map.js"></script>
+
+    <!-- =================================================
+     LOGICA APP
+================================================== -->
 
     <script src="app.js"></script>
   </body>
