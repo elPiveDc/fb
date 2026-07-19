@@ -1,13 +1,11 @@
 /* ===========================
-   RESET GENERAL
+   RESET
 =========================== */
 
 * {
-
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-
 }
 
 
@@ -22,7 +20,6 @@ body {
     background: #000;
 
     font-family:
-
         Arial,
         Helvetica,
         sans-serif;
@@ -32,9 +29,8 @@ body {
 }
 
 
-
 /* ===========================
-   CONTENEDOR CAMARA
+   CONTENEDOR PRINCIPAL
 =========================== */
 
 
@@ -42,13 +38,28 @@ body {
 
     position: relative;
 
-    width: 100vw;
+    width: 100%;
 
-    height: 75vh;
+    height: 70dvh;
 
     overflow: hidden;
 
     background: black;
+
+}
+
+
+/*
+ Compatibilidad navegadores antiguos
+*/
+
+@supports not (height: 70dvh) {
+
+    #camera-container {
+
+        height: 70vh;
+
+    }
 
 }
 
@@ -67,7 +78,7 @@ body {
 
 
 /* ===========================
-   CAPA HUD
+   HUD GENERAL
 =========================== */
 
 
@@ -84,54 +95,50 @@ body {
 
 
 /* ===========================
-   PANEL INFORMACION
+   INFORMACION GPS
 =========================== */
 
 
 #info-panel {
 
-
     position: absolute;
 
+    top: 12px;
 
-    top: 20px;
-
-    left: 20px;
-
+    left: 12px;
 
 
-    padding: 15px 20px;
+    padding: 10px 14px;
 
 
-    min-width: 250px;
+    width: auto;
+
+    max-width: 55vw;
 
 
     background:
 
-        rgba(0, 0, 0, 0.55);
+        rgba(0, 0, 0, .55);
 
 
-
-    border-radius: 14px;
-
+    border-radius: 12px;
 
 
     backdrop-filter: blur(8px);
 
 
-
-    font-size: 15px;
-
+    font-size: clamp(11px, 3vw, 15px);
 
 
-    line-height: 1.7;
+    line-height: 1.5;
 
 
+}
 
-    box-shadow:
 
-        0 0 15px rgba(0, 0, 0, .4);
+#info-panel div {
 
+    white-space: nowrap;
 
 }
 
@@ -139,9 +146,7 @@ body {
 
 #info-panel strong {
 
-
     color: #ddd;
-
 
 }
 
@@ -159,12 +164,10 @@ body {
     position: absolute;
 
 
+    top: 12px;
 
-    top: 20px;
 
-
-    right: 20px;
-
+    right: 12px;
 
 
     text-align: center;
@@ -177,15 +180,13 @@ body {
 #compass {
 
 
-    width: 110px;
+    width: clamp(65px, 18vw, 100px);
 
 
-    height: 110px;
-
+    height: clamp(65px, 18vw, 100px);
 
 
     display: flex;
-
 
 
     justify-content: center;
@@ -194,28 +195,18 @@ body {
     align-items: center;
 
 
-
-    font-size: 70px;
-
+    font-size: clamp(40px, 12vw, 65px);
 
 
     background:
 
-        rgba(0, 0, 0, .45);
-
+        rgba(0, 0, 0, .5);
 
 
     border-radius: 50%;
 
 
-
     backdrop-filter: blur(6px);
-
-
-
-    transition:
-
-        transform .15s linear;
 
 
 }
@@ -225,15 +216,10 @@ body {
 #heading {
 
 
-    margin-top: 10px;
+    margin-top: 5px;
 
 
-
-    font-size: 22px;
-
-
-    font-weight: bold;
-
+    font-size: clamp(14px, 4vw, 20px);
 
 
     background:
@@ -241,15 +227,15 @@ body {
         rgba(0, 0, 0, .5);
 
 
-
-    padding: 5px 15px;
-
+    padding: 4px 10px;
 
 
-    border-radius: 10px;
+    border-radius: 8px;
 
 
 }
+
+
 
 
 
@@ -264,18 +250,16 @@ body {
     position: absolute;
 
 
-
-    bottom: 35px;
+    bottom: 15px;
 
 
     left: 50%;
 
 
+    transform: translateX(-50%);
 
-    transform:
 
-        translateX(-50%);
-
+    width: 90%;
 
 
     text-align: center;
@@ -288,29 +272,20 @@ body {
 #arrow {
 
 
-    font-size: 90px;
+    font-size:
 
-
-
-    font-weight: bold;
-
+        clamp(50px, 15vw, 90px);
 
 
     line-height: 1;
 
 
+    font-weight: bold;
+
 
     text-shadow:
 
-        0 0 15px black,
-
-        0 0 30px black;
-
-
-
-    transition:
-
-        transform .25s ease;
+        0 0 15px black;
 
 
 }
@@ -320,43 +295,40 @@ body {
 #instruction {
 
 
-
-    margin-top: 15px;
-
+    margin-top: 8px;
 
 
-    padding: 12px 20px;
+    padding: 8px 15px;
 
+
+    display: inline-block;
+
+
+    max-width: 90%;
 
 
     background:
 
-        rgba(0, 0, 0, .55);
+        rgba(0, 0, 0, .6);
 
 
-
-    border-radius: 14px;
-
+    border-radius: 12px;
 
 
-    backdrop-filter:
-
-        blur(8px);
+    backdrop-filter: blur(6px);
 
 
+    font-size:
 
-    font-size: 22px;
-
+        clamp(14px, 4vw, 22px);
 
 
     font-weight: bold;
 
 
-
-    min-width: 260px;
-
-
 }
+
+
 
 
 
@@ -368,46 +340,90 @@ body {
 #map {
 
 
-    width: 100vw;
+    width: 100%;
 
 
+    height: 30dvh;
 
-    height: 25vh;
 
+    min-height: 200px;
+
+
+    border-top: 2px solid #222;
 
 
     z-index: 1;
 
 
+}
 
-    border-top:
 
-        2px solid #222;
 
+@supports not (height:30dvh) {
+
+    #map {
+
+        height: 30vh;
+
+    }
 
 }
 
 
 
-/*
-  Ajustes Leaflet
-*/
 
-
-.leaflet-control-attribution {
-
-
-    font-size: 10px;
-
-
-}
-
+/* ===========================
+   LEAFLET MOBILE
+=========================== */
 
 
 .leaflet-control-zoom {
 
 
-    border-radius: 10px;
+    transform: scale(1.15);
+
+    transform-origin: top left;
+
+
+}
+
+
+.leaflet-control-attribution {
+
+
+    font-size: 9px;
+
+
+}
+
+
+
+/* ===========================
+   PANTALLAS PEQUEÑAS
+=========================== */
+
+
+@media(max-width:400px) {
+
+
+    #info-panel {
+
+
+        max-width: 50vw;
+
+        font-size: 11px;
+
+
+    }
+
+
+    #instruction {
+
+
+        font-size: 14px;
+
+
+    }
 
 
 }
@@ -416,67 +432,27 @@ body {
 
 
 /* ===========================
-   RESPONSIVE MOVIL
+   HORIZONTAL
 =========================== */
 
 
-@media(max-width:700px) {
+@media (orientation:landscape) {
 
 
-    #info-panel {
+    #camera-container {
 
 
-        top: 10px;
-
-        left: 10px;
-
-
-        min-width: 200px;
-
-
-        font-size: 13px;
-
+        height: 75dvh;
 
     }
 
 
-
-    #compass {
-
-
-        width: 90px;
-
-        height: 90px;
+    #map {
 
 
-        font-size: 55px;
-
+        height: 25dvh;
 
     }
-
-
-
-    #arrow {
-
-
-        font-size: 70px;
-
-
-    }
-
-
-
-    #instruction {
-
-
-        font-size: 17px;
-
-
-        min-width: 220px;
-
-
-    }
-
 
 
 }

@@ -1,8 +1,8 @@
 // =====================================
-// VARIABLES DEL MAPA
+// VARIABLES
 // =====================================
 
-let map;
+let map = null;
 
 let userMarker = null;
 
@@ -14,18 +14,66 @@ let currentLocation = null;
 
 let destination = null;
 
+let currentRoute = null;
+
+let navigationSteps = [];
+
+let lastRouteUpdate = 0;
+
 // =====================================
-// INICIALIZAR MAPA
+// ICONOS
+// =====================================
+
+const userIcon = L.divIcon({
+  className: "",
+
+  html: `
+
+        <div style="
+            width:22px;
+            height:22px;
+            background:#00e5ff;
+            border:4px solid white;
+            border-radius:50%;
+            box-shadow:0 0 15px #00e5ff;">
+        </div>
+
+    `,
+
+  iconSize: [22, 22],
+
+  iconAnchor: [11, 11],
+});
+
+const destinationIcon = L.divIcon({
+  className: "",
+
+  html: `
+
+        <div style="
+            font-size:32px;">
+            ⭐
+        </div>
+
+    `,
+
+  iconSize: [32, 32],
+
+  iconAnchor: [16, 16],
+});
+
+// =====================================
+// CREAR MAPA
 // =====================================
 
 function initMap(lat, lon) {
   map = L.map("map", {
-    zoomControl: true,
+    zoomControl: false,
 
     attributionControl: true,
   });
 
-  // Estilo oscuro moderno
+  // MAPA OSCURO
 
   L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
@@ -40,7 +88,7 @@ function initMap(lat, lon) {
   map.setView(
     [lat, lon],
 
-    18,
+    17,
   );
 
   updateUserMarker(
@@ -49,12 +97,16 @@ function initMap(lat, lon) {
     lon,
   );
 
-  // Seleccionar destino
+  // arregla render móvil
+
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 500);
 
   map.on(
     "click",
 
-    function (e) {
+    (e) => {
       destination = e.latlng;
 
       if (destinationMarker) {
@@ -65,6 +117,8 @@ function initMap(lat, lon) {
         destination,
 
         {
+          icon: destinationIcon,
+
           title: "Destino",
         },
       )
@@ -77,14 +131,14 @@ function initMap(lat, lon) {
 }
 
 // =====================================
-// ACTUALIZAR POSICION USUARIO
+// POSICION USUARIO
 // =====================================
 
 function updateUserLocation(lat, lon) {
   currentLocation = {
-    lat: lat,
+    lat,
 
-    lon: lon,
+    lon,
   };
 
   if (!map) {
@@ -103,37 +157,43 @@ function updateUserLocation(lat, lon) {
     lon,
   );
 
-  if (destination) {
+  // evitar llamadas excesivas OSRM
+
+  const now = Date.now();
+
+  if (destination && now - lastRouteUpdate > 10000) {
     calculateRoute();
+
+    lastRouteUpdate = now;
   }
 }
 
 function updateUserMarker(lat, lon) {
-  let position = [lat, lon];
+  const pos = [lat, lon];
 
   if (!userMarker) {
     userMarker = L.marker(
-      position,
+      pos,
 
       {
+        icon: userIcon,
+
         title: "Tu ubicación",
       },
     )
 
       .addTo(map);
   } else {
-    userMarker.setLatLng(position);
+    userMarker.setLatLng(pos);
   }
 }
 
 // =====================================
-// CALCULAR RUTA CON OSRM
+// OSRM
 // =====================================
 
 async function calculateRoute() {
-  if (!currentLocation || !destination) {
-    return;
-  }
+  if (!currentLocation || !destination) return;
 
   const start = `${currentLocation.lon},${currentLocation.lat}`;
 
@@ -146,18 +206,18 @@ async function calculateRoute() {
 
     const data = await response.json();
 
-    if (data.routes.length === 0) {
-      return;
-    }
+    if (!data.routes.length) return;
 
-    const route = data.routes[0];
+    currentRoute = data.routes[0];
 
-    drawRoute(route.geometry);
+    navigationSteps = currentRoute.legs[0].steps;
 
-    updateNavigationInfo(route);
+    drawRoute(currentRoute.geometry);
+
+    updateNavigationInfo();
   } catch (error) {
     console.error(
-      "Error OSRM",
+      "OSRM error",
 
       error,
     );
@@ -173,15 +233,15 @@ function drawRoute(geometry) {
     map.removeLayer(routeLayer);
   }
 
-  const coordinates = geometry.coordinates.map((point) => [point[1], point[0]]);
+  const points = geometry.coordinates.map((p) => [p[1], p[0]]);
 
   routeLayer = L.polyline(
-    coordinates,
+    points,
 
     {
       color: "#00ffff",
 
-      weight: 5,
+      weight: 6,
 
       opacity: 0.9,
     },
@@ -193,7 +253,7 @@ function drawRoute(geometry) {
     routeLayer.getBounds(),
 
     {
-      padding: [30, 30],
+      padding: [40, 40],
     },
   );
 }
@@ -202,33 +262,39 @@ function drawRoute(geometry) {
 // INFORMACION NAVEGACION
 // =====================================
 
-function updateNavigationInfo(route) {
-  const meters = route.distance;
+function updateNavigationInfo() {
+  if (!currentRoute) return;
 
-  const seconds = route.duration;
+  const distance = currentRoute.distance;
 
-  const distanceText =
-    meters > 1000
-      ? (meters / 1000).toFixed(1) + " km"
-      : meters.toFixed(0) + " m";
+  const duration = currentRoute.duration;
 
-  const eta = Math.ceil(seconds / 60) + " min";
+  document.getElementById("distance").textContent = formatDistance(distance);
 
-  document.getElementById("distance").textContent = distanceText;
+  document.getElementById("eta").textContent =
+    Math.ceil(duration / 60) + " min";
 
-  document.getElementById("eta").textContent = eta;
+  if (navigationSteps.length) {
+    const step = navigationSteps[0];
 
-  let instruction = "Continúe recto";
+    const maneuver = step.maneuver;
 
-  if (route.legs && route.legs[0].steps.length) {
-    let step = route.legs[0].steps[0];
+    let text = "Continúe recto";
 
-    let modifier = step.maneuver.modifier;
+    if (maneuver.modifier) {
+      text = maneuver.modifier
 
-    if (modifier) {
-      instruction = modifier.toUpperCase();
+        .replace("_", " ")
+
+        .toUpperCase();
     }
-  }
 
-  document.getElementById("instruction").textContent = instruction;
+    document.getElementById("instruction").textContent = text;
+  }
+}
+
+function formatDistance(meters) {
+  if (meters > 1000) return (meters / 1000).toFixed(1) + " km";
+
+  return Math.round(meters) + " m";
 }
