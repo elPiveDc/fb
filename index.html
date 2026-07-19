@@ -3,13 +3,44 @@
   <head>
     <meta charset="UTF-8" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
+    <!-- Colorea la barra del navegador acorde al HUD oscuro -->
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Comportamiento tipo app de pantalla completa en iOS/Android -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
 
     <title>Navigation HUD</title>
 
-    <!-- Leaflet -->
+    <!-- Preconexión a servicios externos usados por routing.js y map.js
+         (achica la latencia del primer request real a cada uno) -->
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin />
+    <link
+      rel="preconnect"
+      href="https://routing.openstreetmap.de"
+      crossorigin
+    />
+    <link
+      rel="preconnect"
+      href="https://nominatim.openstreetmap.org"
+      crossorigin
+    />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Leaflet (versión fija para evitar roturas por updates silenciosos) -->
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
 
     <!-- CSS propio -->
 
@@ -120,22 +151,31 @@
 
       <!-- Expandir mapa -->
 
-      <button id="map-size-btn">⛶</button>
+      <button id="map-size-btn" aria-label="Expandir o contraer el mapa">
+        ⛶
+      </button>
 
       <!-- Cambiar tema -->
 
-      <button id="map-theme-btn">🌙</button>
+      <button id="map-theme-btn" aria-label="Cambiar tema claro u oscuro">
+        🌙
+      </button>
 
       <!-- Cambiar modo -->
 
-      <button id="mode-btn">🚶</button>
+      <button
+        id="mode-btn"
+        aria-label="Cambiar entre modo caminando y vehículo"
+      >
+        🚶
+      </button>
     </div>
 
     <!-- =================================================
      LIBRERIAS
 ================================================== -->
 
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- =================================================
      SISTEMA DE RUTAS

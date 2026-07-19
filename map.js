@@ -28,6 +28,17 @@ let lightLayer;
 
 let navigationMode = "walking";
 
+// control de peticiones concurrentes (evita pintar una ruta vieja
+// encima de una más reciente si el usuario cambia de destino rápido)
+let routeRequestId = 0;
+
+// throttle para no saturar Nominatim (máx. 1 request/seg permitido,
+// acá usamos un margen prudente de 3 seg y solo si hay movimiento real)
+let lastStreetLookup = 0;
+let lastStreetCoords = null;
+const STREET_LOOKUP_INTERVAL_MS = 3000;
+const STREET_LOOKUP_MIN_DISTANCE_M = 15;
+
 // =====================================
 // ICONOS
 // =====================================
@@ -256,6 +267,10 @@ function updateUserMarker(lat, lon) {
 async function calculateRoute() {
   if (!currentLocation || !destination) return;
 
+  // identificador único de esta petición: si llega una más nueva
+  // antes de que esta responda, esta se descarta al terminar
+  const requestId = ++routeRequestId;
+
   try {
     let route = await calculateRouteByMode(
       currentLocation,
@@ -265,6 +280,10 @@ async function calculateRoute() {
       navigationMode,
     );
 
+    // si mientras esperábamos la respuesta se lanzó otra petición
+    // más reciente (nuevo click o cambio de modo), ignoramos esta
+    if (requestId !== routeRequestId) return;
+
     currentRoute = route;
 
     navigationSteps = route.steps || [];
@@ -273,6 +292,8 @@ async function calculateRoute() {
 
     updateNavigationInfo(route);
   } catch (error) {
+    if (requestId !== routeRequestId) return;
+
     console.error(
       "Routing error",
 
@@ -378,10 +399,29 @@ function updateRouteModeLabel() {
 }
 
 // =====================================
-// CALLE ACTUAL
+// CALLE ACTUAL (con throttle para respetar Nominatim)
 // =====================================
 
 async function updateStreet(lat, lon) {
+  const now = Date.now();
+
+  if (lastStreetCoords) {
+    const moved = haversineDistance(
+      lastStreetCoords.lat,
+      lastStreetCoords.lon,
+      lat,
+      lon,
+    );
+
+    const tooSoon = now - lastStreetLookup < STREET_LOOKUP_INTERVAL_MS;
+    const tooClose = moved < STREET_LOOKUP_MIN_DISTANCE_M;
+
+    if (tooSoon && tooClose) return;
+  }
+
+  lastStreetLookup = now;
+  lastStreetCoords = { lat, lon };
+
   try {
     let response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
@@ -390,8 +430,24 @@ async function updateStreet(lat, lon) {
     let data = await response.json();
 
     document.getElementById("street").textContent =
-      data.address.road || "Zona desconocida";
+      data.address?.road || "Zona desconocida";
   } catch (e) {}
+}
+
+// distancia aproximada en metros entre dos coordenadas (fórmula haversine)
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 function formatDistance(m) {

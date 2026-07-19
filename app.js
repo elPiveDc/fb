@@ -20,6 +20,7 @@ const headingLabel = document.getElementById("heading");
 // =====================================
 
 let currentHeading = 0;
+let cameraStream = null;
 
 // =====================================
 // RELOJ
@@ -41,7 +42,7 @@ updateClock();
 
 async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    cameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "environment",
       },
@@ -49,7 +50,7 @@ async function startCamera() {
       audio: false,
     });
 
-    video.srcObject = stream;
+    video.srcObject = cameraStream;
   } catch (error) {
     console.error("Error cámara:", error);
 
@@ -89,6 +90,11 @@ function startGPS() {
 
         error,
       );
+
+      // el usuario debe enterarse si el GPS falla, no solo la consola
+      if (error.code === error.PERMISSION_DENIED) {
+        alert("Se necesita permiso de ubicación para navegar");
+      }
     },
 
     {
@@ -106,17 +112,19 @@ function updateGPSInfo(coords) {
 
   lonLabel.textContent = coords.longitude.toFixed(6);
 
-  altLabel.textContent = coords.altitude
-    ? coords.altitude.toFixed(1) + " m"
-    : "---";
+  // antes: "coords.altitude ? ..." fallaba con altitud real = 0 (nivel del mar)
+  altLabel.textContent =
+    coords.altitude !== null && coords.altitude !== undefined
+      ? coords.altitude.toFixed(1) + " m"
+      : "---";
 
   accLabel.textContent = coords.accuracy.toFixed(1) + " m";
 
-  if (coords.speed) {
-    speedLabel.textContent = (coords.speed * 3.6).toFixed(1) + " km/h";
-  } else {
-    speedLabel.textContent = "0 km/h";
-  }
+  // antes: "coords.speed ? ..." fallaba con velocidad real = 0 (detenido)
+  speedLabel.textContent =
+    coords.speed !== null && coords.speed !== undefined
+      ? (coords.speed * 3.6).toFixed(1) + " km/h"
+      : "0 km/h";
 }
 
 // =====================================
@@ -124,6 +132,24 @@ function updateGPSInfo(coords) {
 // =====================================
 
 function startCompass() {
+  // iOS Safari exige permiso explícito para deviceorientation
+  if (typeof DeviceOrientationEvent?.requestPermission === "function") {
+    DeviceOrientationEvent.requestPermission()
+      .then((state) => {
+        if (state === "granted") {
+          attachCompassListener();
+        } else {
+          console.warn("Permiso de brújula denegado");
+        }
+      })
+      .catch((error) => console.error("Error permiso brújula:", error));
+  } else {
+    // Android / navegadores que no requieren permiso explícito
+    attachCompassListener();
+  }
+}
+
+function attachCompassListener() {
   window.addEventListener(
     "deviceorientation",
 

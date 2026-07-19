@@ -2,802 +2,385 @@
    RESET
 ===================================== */
 
-
 * {
-
-    margin: 0;
-
-    padding: 0;
-
-    box-sizing: border-box;
-
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* evita el flash gris al tocar botones/elementos en mobile */
+  -webkit-tap-highlight-color: transparent;
 }
-
-
 
 html,
 body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  /* evita pull-to-refresh y rebote visual al hacer swipe sobre la cámara */
+  overscroll-behavior: none;
+  background: #000;
+  color: white;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
 
-
-    width: 100%;
-
-    height: 100%;
-
-
-    overflow: hidden;
-
-
-    background: #000;
-
-
-    color: white;
-
-
-    font-family:
-
-        Arial,
-        Helvetica,
-        sans-serif;
-
-
+  /* evita selección accidental de texto del HUD en long-press mobile */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
+/* respeta accesibilidad: sin animaciones si el usuario las desactivó */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
 
-
-
+    animation: none !important;
+  }
+}
 
 /* =====================================
    CAMARA
 ===================================== */
 
-
 #camera-container {
+  position: relative;
 
+  width: 100%;
 
-    position: relative;
+  height: 70dvh;
 
+  overflow: hidden;
 
-    width: 100%;
-
-
-    height: 70dvh;
-
-
-    overflow: hidden;
-
-
-    background: black;
-
-
+  background: black;
 }
 
-
-
-@supports not (height:70dvh) {
-
-    #camera-container {
-
-        height: 70vh;
-
-    }
-
+@supports not (height: 70dvh) {
+  #camera-container {
+    height: 70vh;
+  }
 }
-
-
-
 
 #camera {
+  width: 100%;
 
+  height: 100%;
 
-    width: 100%;
-
-
-    height: 100%;
-
-
-    object-fit: cover;
-
-
+  object-fit: cover;
 }
-
-
-
-
-
-
 
 /* =====================================
    HUD OVERLAY
 ===================================== */
 
-
 #overlay {
+  position: absolute;
 
+  inset: 0;
 
-    position: absolute;
-
-
-    inset: 0;
-
-
-    pointer-events: none;
-
-
+  pointer-events: none;
 }
-
-
-
-
-
-
 
 /* =====================================
    PANEL INFORMACION
 ===================================== */
 
-
 #info-panel {
+  position: absolute;
 
+  /* respeta el notch/isla dinámica sumando el safe-area al offset original */
+  top: calc(12px + env(safe-area-inset-top, 0px));
 
-    position: absolute;
+  left: calc(12px + env(safe-area-inset-left, 0px));
 
+  padding: 10px 14px;
 
-    top: 12px;
+  max-width: 55vw;
 
+  background: rgba(0, 0, 0, 0.55);
 
-    left: 12px;
+  border-radius: 12px;
 
+  -webkit-backdrop-filter: blur(8px);
 
+  backdrop-filter: blur(8px);
 
-    padding: 10px 14px;
+  font-size: clamp(11px, 3vw, 15px);
 
-
-
-    max-width: 55vw;
-
-
-
-    background:
-
-        rgba(0, 0, 0, .55);
-
-
-
-    border-radius: 12px;
-
-
-
-    backdrop-filter:
-
-        blur(8px);
-
-
-
-    font-size:
-
-        clamp(11px, 3vw, 15px);
-
-
-
-    line-height: 1.55;
-
-
-
+  line-height: 1.55;
 }
-
-
 
 #info-panel div {
-
-
-    white-space: nowrap;
-
-
+  white-space: nowrap;
 }
-
-
 
 #info-panel strong {
-
-
-    color: #ddd;
-
-
+  color: #ddd;
 }
-
-
-
-
-
-
 
 /* =====================================
    BRUJULA
 ===================================== */
 
-
 #compass-panel {
+  position: absolute;
 
+  top: calc(12px + env(safe-area-inset-top, 0px));
 
-    position: absolute;
+  right: calc(12px + env(safe-area-inset-right, 0px));
 
-
-    top: 12px;
-
-
-    right: 12px;
-
-
-    text-align: center;
-
-
+  text-align: center;
 }
-
-
-
 
 #compass {
+  width: clamp(65px, 18vw, 100px);
 
+  height: clamp(65px, 18vw, 100px);
 
-    width:
+  display: flex;
 
-        clamp(65px, 18vw, 100px);
+  justify-content: center;
 
+  align-items: center;
 
+  font-size: clamp(40px, 12vw, 65px);
 
-    height:
+  background: rgba(0, 0, 0, 0.5);
 
-        clamp(65px, 18vw, 100px);
+  border-radius: 50%;
 
+  -webkit-backdrop-filter: blur(6px);
 
+  backdrop-filter: blur(6px);
 
-    display: flex;
-
-
-    justify-content: center;
-
-
-    align-items: center;
-
-
-
-    font-size:
-
-        clamp(40px, 12vw, 65px);
-
-
-
-    background:
-
-        rgba(0, 0, 0, .5);
-
-
-
-    border-radius: 50%;
-
-
-
-    backdrop-filter:
-
-        blur(6px);
-
-
-
-    transition:
-
-        transform .15s linear;
-
-
+  transition: transform 0.15s linear;
 }
-
-
-
-
 
 #heading {
+  margin-top: 5px;
 
+  padding: 4px 10px;
 
-    margin-top: 5px;
+  background: rgba(0, 0, 0, 0.55);
 
+  border-radius: 8px;
 
-
-    padding: 4px 10px;
-
-
-
-    background:
-
-        rgba(0, 0, 0, .55);
-
-
-
-    border-radius: 8px;
-
-
-
-    font-size:
-
-        clamp(14px, 4vw, 20px);
-
-
-
+  font-size: clamp(14px, 4vw, 20px);
 }
-
-
-
-
-
-
 
 /* =====================================
    NAVEGACION
 ===================================== */
 
-
 #navigation {
+  position: absolute;
 
+  left: 50%;
 
-    position: absolute;
+  /* respeta la barra de gestos inferior en iOS/Android */
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
 
+  transform: translateX(-50%);
 
+  width: 90%;
 
-    left: 50%;
-
-
-
-    bottom: 18px;
-
-
-
-    transform:
-
-        translateX(-50%);
-
-
-
-    width: 90%;
-
-
-
-    text-align: center;
-
-
+  text-align: center;
 }
-
-
-
 
 #arrow {
+  font-size: clamp(55px, 16vw, 95px);
 
+  font-weight: bold;
 
-    font-size:
+  line-height: 1;
 
-        clamp(55px, 16vw, 95px);
-
-
-
-    font-weight: bold;
-
-
-
-    line-height: 1;
-
-
-
-    text-shadow:
-
-        0 0 15px black;
-
-
-
+  text-shadow: 0 0 15px black;
 }
-
-
 
 #street {
+  display: inline-block;
 
+  margin-top: 5px;
 
-    display: inline-block;
+  padding: 5px 14px;
 
+  background: rgba(0, 0, 0, 0.55);
 
+  border-radius: 10px;
 
-    margin-top: 5px;
-
-
-
-    padding: 5px 14px;
-
-
-
-    background:
-
-        rgba(0, 0, 0, .55);
-
-
-
-    border-radius: 10px;
-
-
-
-    font-size:
-
-        clamp(13px, 4vw, 18px);
-
-
-
+  font-size: clamp(13px, 4vw, 18px);
 }
-
-
 
 #instruction {
+  display: inline-block;
 
+  margin-top: 8px;
 
+  padding: 8px 16px;
 
-    display: inline-block;
+  max-width: 95%;
 
+  background: rgba(0, 0, 0, 0.65);
 
+  border-radius: 12px;
 
-    margin-top: 8px;
+  -webkit-backdrop-filter: blur(8px);
 
+  backdrop-filter: blur(8px);
 
+  font-size: clamp(14px, 4vw, 22px);
 
-    padding: 8px 16px;
-
-
-
-    max-width: 95%;
-
-
-
-    background:
-
-        rgba(0, 0, 0, .65);
-
-
-
-    border-radius: 12px;
-
-
-
-    backdrop-filter:
-
-        blur(8px);
-
-
-
-    font-size:
-
-        clamp(14px, 4vw, 22px);
-
-
-
-    font-weight: bold;
-
-
+  font-weight: bold;
 }
-
-
-
-
-
-
-
 
 /* =====================================
    CONTENEDOR MAPA
 ===================================== */
 
-
 #map-container {
+  position: relative;
 
+  width: 100%;
 
-    position: relative;
+  height: 30dvh;
 
+  min-height: 180px;
 
-
-    width: 100%;
-
-
-
-    height: 30dvh;
-
-
-
-    min-height: 180px;
-
-
-
-    transition:
-
-        height .35s ease;
-
-
-
+  transition: height 0.35s ease;
 }
 
-
-
-@supports not (height:30dvh) {
-
-    #map-container {
-
-        height: 30vh;
-
-    }
-
+@supports not (height: 30dvh) {
+  #map-container {
+    height: 30vh;
+  }
 }
-
-
-
 
 #map-container.expanded {
-
-
-    height: 70dvh;
-
-
+  height: 70dvh;
 }
-
-
-
-
 
 #map {
+  width: 100%;
 
+  height: 100%;
 
-    width: 100%;
-
-
-    height: 100%;
-
-
-
-    border-top:
-
-        2px solid #222;
-
-
-
+  border-top: 2px solid #222;
 }
-
-
-
-
-
-
 
 /* =====================================
    BOTONES MAPA
 ===================================== */
 
-
 #map-size-btn,
-#map-theme-btn {
+#map-theme-btn,
+#mode-btn {
+  position: absolute;
 
+  /* respeta la barra de gestos/borde lateral en pantallas con notch */
+  right: calc(15px + env(safe-area-inset-right, 0px));
 
+  z-index: 9999;
 
-    position: absolute;
+  width: 48px;
 
+  height: 48px;
 
-    right: 15px;
+  border: none;
 
+  border-radius: 50%;
 
-    z-index: 9999;
+  background: rgba(0, 0, 0, 0.75);
 
+  color: white;
 
+  font-size: 22px;
 
-    width: 48px;
+  display: flex;
 
+  justify-content: center;
 
-    height: 48px;
+  align-items: center;
 
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 
+  /* respuesta táctil inmediata, sin delay de 300ms ni doble-tap-zoom */
+  touch-action: manipulation;
 
-    border: none;
-
-
-
-    border-radius: 50%;
-
-
-
-    background:
-
-        rgba(0, 0, 0, .75);
-
-
-
-    color: white;
-
-
-
-    font-size: 22px;
-
-
-
-    display: flex;
-
-
-
-    justify-content: center;
-
-
-
-    align-items: center;
-
-
-
-    box-shadow:
-
-        0 0 10px rgba(0, 0, 0, .5);
-
-
-
+  cursor: pointer;
 }
-
-
-
 
 #map-size-btn {
-
-
-    bottom: 70px;
-
-
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
 }
 
-
-
 #map-theme-btn {
-
-
-    bottom: 15px;
-
-
+  bottom: calc(15px + env(safe-area-inset-bottom, 0px));
 }
 
 #mode-btn {
-
-    position: absolute;
-
-    right: 15px;
-
-    bottom: 125px;
-
-    z-index: 9999;
-
-
-    width: 48px;
-
-    height: 48px;
-
-
-    border: none;
-
-    border-radius: 50%;
-
-
-    background:
-        rgba(0, 0, 0, .75);
-
-
-    color: white;
-
-    font-size: 22px;
-
-
+  bottom: calc(125px + env(safe-area-inset-bottom, 0px));
 }
-
-
-
 
 /* =====================================
    LEAFLET
 ===================================== */
 
-
 .leaflet-control-zoom {
-
-
-    transform:
-
-        scale(1.15);
-
-
-
-    transform-origin:
-
-        top left;
-
-
+  transform: scale(1.15);
+  transform-origin: top left;
 }
-
-
 
 .leaflet-control-attribution {
-
-
-    font-size: 9px;
-
-
+  font-size: 9px;
 }
-
-
-
-
-
-
-
 
 /* =====================================
    MOVILES PEQUEÑOS
 ===================================== */
 
+@media (max-width: 400px) {
+  #info-panel {
+    font-size: 11px;
+    padding: 8px;
+  }
 
-@media(max-width:400px) {
-
-
-
-    #info-panel {
-
-
-        font-size: 11px;
-
-
-        padding: 8px;
-
-
-    }
-
-
-
-
-    #instruction {
-
-
-        font-size: 14px;
-
-
-    }
-
-
-
-
+  #instruction {
+    font-size: 14px;
+  }
 }
 
+/* pantallas muy angostas (iPhone SE, Android gama baja) */
+@media (max-width: 340px) {
+  #compass {
+    width: 58px;
 
+    height: 58px;
 
+    font-size: 34px;
+  }
 
+  #map-size-btn,
+  #map-theme-btn,
+  #mode-btn {
+    width: 42px;
 
+    height: 42px;
 
-
+    font-size: 18px;
+  }
+}
 
 /* =====================================
    LANDSCAPE
 ===================================== */
 
+@media (orientation: landscape) {
+  #camera-container {
+    height: 68dvh;
+  }
 
-@media(orientation:landscape) {
+  #map-container {
+    height: 32dvh;
 
-
-    #camera-container {
-
-
-        height: 75dvh;
-
-
-    }
-
-
-
-    #map-container {
-
-
-        height: 25dvh;
-
-
-    }
-
-
-
+    /* en landscape con poca altura física, 180px puede ser
+           demasiado — se reduce para no aplastar la cámara */
+    min-height: 140px;
+  }
 }
